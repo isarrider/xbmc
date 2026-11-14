@@ -24,6 +24,7 @@
 #include "windowing/WinSystem.h"
 
 #include <algorithm>
+#include <cmath>
 #include <iomanip>
 #include <iterator>
 #include <memory>
@@ -746,8 +747,10 @@ void CVideoPlayerVideo::Process()
         }
 
         m_videoStats.AddSampleBytes(pPacket->iSize);
-        m_processInfo.AddVideoFrameSize(static_cast<uint32_t>(pPacket->iSize),
-                                        GetFrameType(*pPacket));
+        const double time = pPacket->dts != DVD_NOPTS_VALUE ? pPacket->dts : pPacket->pts;
+        m_processInfo.AddVideoFrameSize(
+            static_cast<uint32_t>(pPacket->iSize), GetFrameType(*pPacket),
+            time != DVD_NOPTS_VALUE ? time / DVD_TIME_BASE : std::nan(""));
         UpdatePlayerInfo();
 
         if (ProcessDecoderOutput(frametime, pts))

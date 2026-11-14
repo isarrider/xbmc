@@ -19,6 +19,7 @@
 #include "utils/MathUtils.h"
 #include "utils/log.h"
 
+#include <cmath>
 #include <mutex>
 
 #ifdef TARGET_RASPBERRY_PI
@@ -445,6 +446,10 @@ void CVideoPlayerAudio::Process()
       }
 
       m_audioStats.AddSampleBytes(pPacket->iSize);
+      const double time = pPacket->pts != DVD_NOPTS_VALUE ? pPacket->pts : pPacket->dts;
+      m_processInfo.AddAudioPacketSize(static_cast<uint32_t>(pPacket->iSize),
+                                       time != DVD_NOPTS_VALUE ? time / DVD_TIME_BASE
+                                                               : std::nan(""));
       UpdatePlayerInfo();
 
       if (ProcessDecoderOutput(audioframe))
