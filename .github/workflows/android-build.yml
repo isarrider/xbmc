@@ -19,7 +19,7 @@ on:
       package:
         description: Android package name; differs from org.xbmc.kodi so the test build installs next to the regular Kodi
         required: true
-        default: org.xbmc.kodi.test
+        default: org.xbmc.kodi.isarrider
 
 permissions:
   contents: read
