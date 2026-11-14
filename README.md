@@ -21,6 +21,42 @@
   <a href="https://github.com/xbmc/xbmc/commits/master"><img alt="Commits" src="https://img.shields.io/github/commits-since/xbmc/xbmc/latest.svg?style=flat-square"></a>
 </p>
 
+## About this fork
+
+This is [isarrider/xbmc](https://github.com/isarrider/xbmc), a fork of [xbmc/xbmc](https://github.com/xbmc/xbmc). It follows upstream `master` and adds the changes below, which are not in upstream yet. This fork's `master` contains all of them, and the Android test builds are made from it. Each change also lives on its own branch, from which it is (or is meant to be) proposed upstream. Once upstream merges a change, its row is removed here.
+
+| Change | Settings (`advancedsettings.xml`) | Upstream |
+|---|---|---|
+| **Frame size graph in the Player Debug Info.** One dot per video frame with its size, a white line with the average bitrate over the last second, a grid with labels, and a legend line between `Player` and `VSyncOff`. Optionally colours I, P and B frames differently; the frame types are only parsed while the graph is shown. | `video/debugframegraph`: `scale` `log`/`logarithmic` (default) or `lin`/`linear`, `mode` `sweep` (default) or `scroll`, `frametypes` `true`/`false` (default), `height` 10–90 % of the video height (default 35) | [#30498](https://github.com/xbmc/xbmc/pull/30498), branch [`video-frame-graph`](https://github.com/isarrider/xbmc/tree/video-frame-graph) |
+| **Audio bitrate in the frame size graph.** A pink line with the audio bitrate over the last second, aligned with the video frames, either over the frame dots or in its own strip below them. | `video/debugframegraph/audio`: `off` (default), `overlay` or `band` | fork only, branch [`debug-frame-graph-audio`](https://github.com/isarrider/xbmc/tree/debug-frame-graph-audio), needs #30498 |
+| **Thread names on Android, long names on Linux.** Kodi's threads get their names on Android too, so they can be told apart in `top -H`, profilers and crash reports. Names longer than 15 characters were rejected by the OS and are now cut to 15. | – | [#30548](https://github.com/xbmc/xbmc/pull/30548), Piers backport [#30549](https://github.com/xbmc/xbmc/pull/30549), branches [`android-thread-names`](https://github.com/isarrider/xbmc/tree/android-thread-names) and [`android-thread-names-piers`](https://github.com/isarrider/xbmc/tree/android-thread-names-piers) |
+| **CPU usage per thread in the Player Debug Info.** A `Threads:` line with the busiest threads of the last second in percent of one core, threads with the same name combined, e.g. `VideoPlayerVide x3 184%, ActiveAE 14%`. Linux and Android only. | `video/debugthreads`: `enabled` `true` (default)/`false`, `count` 1–10 (default 5) | fork only, branch [`debug-thread-cpu`](https://github.com/isarrider/xbmc/tree/debug-thread-cpu), needs #30548 on Android |
+| **GitHub Actions on Node 24.** Kodi's own workflows use the current major versions of their actions, and the deprecated `set-output` command is replaced. | – | [#30547](https://github.com/xbmc/xbmc/pull/30547), branch [`workflows-node24`](https://github.com/isarrider/xbmc/tree/workflows-node24) |
+| **Threaded VC-1 decoding.** The internal FFmpeg gets frame threading for the VC-1 decoder from [isarrider/FFmpeg](https://github.com/isarrider/FFmpeg), so VC-1 without a hardware decoder uses several cores (tested on a Fire TV Stick 4K Max and a Pixel 8 Pro). | – | fork only, branch [`ffmpeg-vc1-threading`](https://github.com/isarrider/xbmc/tree/ffmpeg-vc1-threading); belongs upstream in FFmpeg |
+| **Android test builds.** A manually started workflow builds signed APKs for `armeabi-v7a` or `arm64-v8a` from any branch, as package `org.xbmc.kodi.isarrider`, so they install next to the official Kodi. | – | fork only |
+
+All settings go into `userdata/advancedsettings.xml`, for example:
+
+```xml
+<advancedsettings>
+  <video>
+    <debugframegraph>
+      <scale>log</scale>
+      <mode>sweep</mode>
+      <height>35</height>
+      <frametypes>true</frametypes>
+      <audio>overlay</audio>
+    </debugframegraph>
+    <debugthreads>
+      <enabled>true</enabled>
+      <count>5</count>
+    </debugthreads>
+  </video>
+</advancedsettings>
+```
+
+To see the exact difference against upstream: [compare xbmc:master...isarrider:master](https://github.com/xbmc/xbmc/compare/master...isarrider:xbmc:master).
+
 <a href="https://play.google.com/store/apps/details?id=org.xbmc.kodi" target="_blank">
   <img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png" height="80"/>
 </a>
