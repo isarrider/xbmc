@@ -10,6 +10,7 @@
 
 #include "DebugFrameGraph.h"
 #include "DebugInfo.h"
+#include "DebugThreadUsage.h"
 #include "OverlayRenderer.h"
 #include "cores/VideoPlayer/DVDCodecs/Overlay/DVDOverlay.h"
 #include "cores/VideoPlayer/DVDSubtitles/SubtitlesAdapter.h"
@@ -47,6 +48,7 @@ protected:
 
   CRenderer m_overlayRenderer;
   CDebugFrameGraph m_frameGraph;
+  CDebugThreadUsage m_threadUsage;
   bool m_showFrameGraph{false};
 
 private:
