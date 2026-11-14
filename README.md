@@ -23,7 +23,7 @@
 
 ## About this fork
 
-This is [isarrider/xbmc](https://github.com/isarrider/xbmc), a fork of [xbmc/xbmc](https://github.com/xbmc/xbmc). It follows upstream `master` and adds the changes below, which are not in upstream yet. This fork's `master` contains all of them, and the Android test builds are made from it. Each change also lives on its own branch, from which it is (or is meant to be) proposed upstream. Once upstream merges a change, its row is removed here.
+This is [isarrider/xbmc](https://github.com/isarrider/xbmc), a fork of [xbmc/xbmc](https://github.com/xbmc/xbmc). It follows upstream `master` and adds the changes below, which are not in upstream yet. This fork's `master` contains all of them, and the Android test builds are made from it. Each change also lives on its own branch, from which it is (or is meant to be) proposed upstream. Once upstream merges a change, it moves to the list of merged changes below the table.
 
 | Change | Settings (`advancedsettings.xml`) | Upstream |
 |---|---|---|
@@ -34,6 +34,10 @@ This is [isarrider/xbmc](https://github.com/isarrider/xbmc), a fork of [xbmc/xbm
 | **GitHub Actions on Node 24.** Kodi's own workflows use the current major versions of their actions, and the deprecated `set-output` command is replaced. | – | [#30547](https://github.com/xbmc/xbmc/pull/30547), branch [`workflows-node24`](https://github.com/isarrider/xbmc/tree/workflows-node24) |
 | **Threaded VC-1 decoding.** The internal FFmpeg gets frame threading for the VC-1 decoder from [isarrider/FFmpeg](https://github.com/isarrider/FFmpeg), so VC-1 without a hardware decoder uses several cores (tested on a Fire TV Stick 4K Max and a Pixel 8 Pro). | – | fork only, branch [`ffmpeg-vc1-threading`](https://github.com/isarrider/xbmc/tree/ffmpeg-vc1-threading); belongs upstream in FFmpeg |
 | **Android test builds.** A manually started workflow builds signed APKs for `armeabi-v7a` or `arm64-v8a` from any branch, as package `org.xbmc.kodi.isarrider`, so they install next to the official Kodi. | – | fork only |
+
+Merged upstream:
+
+- **Kodi's own CPU usage on Android.** Since Android 8, apps can't read `/proc/stat`, so the debug overlay showed `CPU: N/A`. It now shows Kodi's own CPU usage in total and per core, which also makes it easy to see whether hardware decoding works. [#30132](https://github.com/xbmc/xbmc/pull/30132) (master, Kodi 23), backported to Kodi 22 "Piers" in [#30309](https://github.com/xbmc/xbmc/pull/30309) (in 22.0 RC2).
 
 All settings go into `userdata/advancedsettings.xml`, for example:
 
