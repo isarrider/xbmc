@@ -124,8 +124,26 @@ jobs:
         working-directory: build
         run: make -j"$(nproc)"
 
-      # Reusing the signing key lets new test builds install over older ones
+      # Every build must use the same key, or new test builds don't install over
+      # older ones. The key is taken from the repository secrets
+      # ANDROID_KEYSTORE_BASE64 and ANDROID_KEYSTORE_PASSWORD. Without them a key
+      # kept in the Actions cache is used, which GitHub drops after 7 days unused.
+      - name: Set up signing key from secrets
+        id: signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            mkdir -p ~/.android
+            printf '%s' "$KEYSTORE_BASE64" | base64 -d > ~/.android/kodi-test.keystore
+            echo "source=secret" >> "$GITHUB_OUTPUT"
+          else
+            echo "No signing key secrets set, using the cached key"
+            echo "source=cache" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Restore signing key
+        if: steps.signing.outputs.source == 'cache'
         id: keystore-cache
         uses: actions/cache/restore@v6
         with:
@@ -133,7 +151,7 @@ jobs:
           key: android-debug-keystore
 
       - name: Create signing key
-        if: steps.keystore-cache.outputs.cache-hit != 'true'
+        if: steps.signing.outputs.source == 'cache' && steps.keystore-cache.outputs.cache-hit != 'true'
         run: |
           mkdir -p ~/.android
           keytool -genkey -keystore ~/.android/debug.keystore -v -alias androiddebugkey \
@@ -141,7 +159,7 @@ jobs:
             -keyalg RSA -keysize 2048 -validity 10000
 
       - name: Save signing key
-        if: steps.keystore-cache.outputs.cache-hit != 'true'
+        if: steps.signing.outputs.source == 'cache' && steps.keystore-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@v6
         with:
           path: ~/.android/debug.keystore
@@ -149,9 +167,19 @@ jobs:
 
       - name: Package APK
         working-directory: build
+        env:
+          SIGNING_SOURCE: ${{ steps.signing.outputs.source }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
+          if [ "$SIGNING_SOURCE" = secret ]; then
+            export KODI_ANDROID_STORE_FILE="$HOME/.android/kodi-test.keystore"
+            export KODI_ANDROID_KEY_ALIAS=kodi-test
+            export KODI_ANDROID_STORE_PASSWORD="$KEYSTORE_PASSWORD"
+            export KODI_ANDROID_KEY_PASSWORD="$KEYSTORE_PASSWORD"
+          fi
           make apk
           ls -la "$GITHUB_WORKSPACE"/*.apk
+          rm -f ~/.android/kodi-test.keystore
 
       - name: Upload APK
         uses: actions/upload-artifact@v7
