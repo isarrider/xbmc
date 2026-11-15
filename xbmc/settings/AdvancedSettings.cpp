@@ -255,6 +255,9 @@ void CAdvancedSettings::Initialize()
   m_maxTempo = 1.55f;
   m_videoPreferStereoStream = false;
 
+  m_videoDebugThreads = true;
+  m_videoDebugThreadsCount = 5;
+
   m_videoDefaultLatency = 0.0;
   m_videoDefaultHdrExtraLatency = 0.0;
 
@@ -885,6 +888,13 @@ void CAdvancedSettings::ParseSettingsFile(const std::string &file)
         else if (StringUtils::EqualsNoCase(value, "band"))
           m_videoDebugGraphAudio = 2;
       }
+    }
+
+    const TiXmlElement* pDebugThreads = pElement->FirstChildElement("debugthreads");
+    if (pDebugThreads)
+    {
+      XMLUtils::GetBoolean(pDebugThreads, "enabled", m_videoDebugThreads);
+      XMLUtils::GetInt(pDebugThreads, "count", m_videoDebugThreadsCount, 1, 10);
     }
 
     // Store global display latency settings

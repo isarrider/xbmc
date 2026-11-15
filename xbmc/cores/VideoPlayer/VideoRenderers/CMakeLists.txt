@@ -6,7 +6,8 @@ set(SOURCES BaseRenderer.cpp
             RenderFlags.cpp
             RenderManager.cpp
             DebugFrameGraph.cpp
-            DebugRenderer.cpp)
+            DebugRenderer.cpp
+            DebugThreadUsage.cpp)
 
 set(HEADERS BaseRenderer.h
             ColorManager.h
@@ -18,7 +19,8 @@ set(HEADERS BaseRenderer.h
             RenderInfo.h
             RenderManager.h
             DebugFrameGraph.h
-            DebugRenderer.h)
+            DebugRenderer.h
+            DebugThreadUsage.h)
 
 if(CORE_SYSTEM_NAME STREQUAL windows OR CORE_SYSTEM_NAME STREQUAL windowsstore)
   list(APPEND SOURCES WinRenderer.cpp

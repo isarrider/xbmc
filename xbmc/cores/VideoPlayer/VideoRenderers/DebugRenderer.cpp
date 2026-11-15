@@ -98,6 +98,18 @@ void CDebugRenderer::SetInfo(DEBUG_INFO_PLAYER& info, const DEBUG_INFO_FRAMES& f
       m_adapter->AddSubtitle(legend, 0., 5000000.);
   }
 
+  const auto& advancedSettings = CServiceBroker::GetSettingsComponent()->GetAdvancedSettings();
+  if (advancedSettings->m_videoDebugThreads)
+  {
+    const std::string& threadUsage =
+        m_threadUsage.GetSummary(advancedSettings->m_videoDebugThreadsCount);
+    if (!threadUsage.empty())
+    {
+      std::string threads = "Threads: " + threadUsage;
+      m_adapter->AddSubtitle(threads, 0., 5000000.);
+    }
+  }
+
   m_adapter->AddSubtitle(info.vsync, 0., 5000000.);
   if (!info.contentGeometry.empty())
     m_adapter->AddSubtitle(info.contentGeometry, 0., 5000000.);
