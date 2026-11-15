@@ -25,6 +25,8 @@
 namespace
 {
 constexpr auto UPDATE_INTERVAL = std::chrono::seconds(1);
+// Longer gaps mean the overlay was hidden, so the old sample would average over that time
+constexpr auto MAX_SAMPLE_GAP = std::chrono::seconds(3);
 
 struct ThreadGroup
 {
@@ -36,7 +38,15 @@ struct ThreadGroup
 
 const std::string& CDebugThreadUsage::GetSummary(int maxEntries)
 {
-  if (std::chrono::steady_clock::now() - m_lastRead >= UPDATE_INTERVAL)
+  const auto sinceLastRead = std::chrono::steady_clock::now() - m_lastRead;
+  if (sinceLastRead > MAX_SAMPLE_GAP)
+  {
+    m_lastRead = {};
+    m_threadTicks.clear();
+    m_summary.clear();
+  }
+
+  if (sinceLastRead >= UPDATE_INTERVAL)
     Update(static_cast<size_t>(maxEntries));
 
   return m_summary;
