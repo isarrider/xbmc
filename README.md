@@ -27,7 +27,7 @@ This is [isarrider/xbmc](https://github.com/isarrider/xbmc), a fork of [xbmc/xbm
 
 | Change | Settings (`advancedsettings.xml`) | Upstream |
 |---|---|---|
-| **Frame size graph in the Player Debug Info.** One dot per video frame with its size, a white line with the average bitrate over the last second, a grid with labels, and a legend line between `Player` and `VSyncOff`. Optionally colours I, P and B frames differently; the frame types are only parsed while the graph is shown. | `video/debugframegraph`: `scale` `log`/`logarithmic` (default) or `lin`/`linear`, `mode` `sweep` (default) or `scroll`, `frametypes` `true`/`false` (default), `height` 10–90 % of the video height (default 35) | [#30498](https://github.com/xbmc/xbmc/pull/30498), branch [`video-frame-graph`](https://github.com/isarrider/xbmc/tree/video-frame-graph) |
+| **Frame size graph in the Player Debug Info.** One dot per video frame with its size, a white line with the average bitrate over the last second, a grid with labels, and a legend line between `Player` and `VSyncOff`. Optionally colours I, P and B frames differently; the frame types are only parsed while the graph is shown. Off by default; while it is off, no frame sizes are collected. | `video/debugframegraph`: `enabled` `true`/`false` (default, the graph is off), `scale` `log`/`logarithmic` (default) or `lin`/`linear`, `mode` `sweep` (default) or `scroll`, `frametypes` `true`/`false` (default), `height` 10–90 % of the video height (default 35) | [#30498](https://github.com/xbmc/xbmc/pull/30498), branch [`video-frame-graph`](https://github.com/isarrider/xbmc/tree/video-frame-graph) |
 | **Audio bitrate in the frame size graph.** A pink line with the audio bitrate over the last second, aligned with the video frames, either over the frame dots or in its own strip below them. | `video/debugframegraph/audio`: `off` (default), `overlay` or `band` | fork only, branch [`debug-frame-graph-audio`](https://github.com/isarrider/xbmc/tree/debug-frame-graph-audio), needs #30498 |
 | **Thread names on Android, long names on Linux.** Kodi's threads get their names on Android too, so they can be told apart in `top -H`, profilers and crash reports. Names longer than 15 characters were rejected by the OS and are now cut to 15. | – | [#30548](https://github.com/xbmc/xbmc/pull/30548), Piers backport [#30549](https://github.com/xbmc/xbmc/pull/30549), branches [`android-thread-names`](https://github.com/isarrider/xbmc/tree/android-thread-names) and [`android-thread-names-piers`](https://github.com/isarrider/xbmc/tree/android-thread-names-piers) |
 | **CPU usage per thread in the Player Debug Info.** A `Threads:` line with the busiest threads of the last second in percent of one core, threads with the same name combined, e.g. `VideoPlayerVide x3 184%, ActiveAE 14%`. Linux and Android only. | `video/debugthreads`: `enabled` `true` (default)/`false`, `count` 1–10 (default 5) | fork only, branch [`debug-thread-cpu`](https://github.com/isarrider/xbmc/tree/debug-thread-cpu), needs #30548 on Android |
@@ -45,6 +45,7 @@ All settings go into `userdata/advancedsettings.xml`, for example:
 <advancedsettings>
   <video>
     <debugframegraph>
+      <enabled>true</enabled>
       <scale>log</scale>
       <mode>sweep</mode>
       <height>35</height>
