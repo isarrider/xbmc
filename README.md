@@ -38,25 +38,43 @@ Merged upstream:
 
 - **Kodi's own CPU usage on Android.** Since Android 8, apps can't read `/proc/stat`, so the debug overlay showed `CPU: N/A`. It now shows Kodi's own CPU usage in total and per core, which also makes it easy to see whether hardware decoding works. [#30132](https://github.com/xbmc/xbmc/pull/30132) (master, Kodi 23), backported to Kodi 22 "Piers" in [#30309](https://github.com/xbmc/xbmc/pull/30309) (in 22.0 RC2).
 
-All settings go into `userdata/advancedsettings.xml`, for example:
+### Using the test builds
+
+1. **Get an APK.** Run the "Android build" workflow under Actions (branch `master`, `armeabi-v7a` for 32-bit devices such as the Fire TV Stick 4K Max, `arm64-v8a` for 64-bit phones) and download the APK from the finished run. Downloads need a GitHub login and expire after 90 days.
+2. **Install it.** The package is `org.xbmc.kodi.isarrider`, so it installs next to the official Kodi as a separate app, and newer test builds install over older ones and keep their settings. These builds are Kodi master (currently v23 alpha) plus the changes above; binary add-ons for v23 may be missing.
+3. **Copy your settings from the official Kodi (optional).** In the official Kodi, add `special://home` as a source in the file manager and copy `userdata` and `addons` to `Download/kodi-backup/`. In the test build, add `special://home` the same way and copy both folders back into it. Then stop the test build with Android Settings → Apps → Force stop instead of exiting Kodi, because Kodi saves its settings on exit and would overwrite the copied ones. The Backup add-on by robweber does the same in fewer steps.
+4. **Turn the features on.** Put `advancedsettings.xml` into `userdata/` (in the file manager: `special://home/userdata/`, from `Download`) and restart Kodi; the file is only read at startup:
 
 ```xml
 <advancedsettings>
   <video>
     <debugframegraph>
-      <enabled>true</enabled>
-      <scale>log</scale>
-      <mode>sweep</mode>
-      <height>35</height>
-      <frametypes>true</frametypes>
-      <audio>overlay</audio>
+      <enabled>true</enabled>       <!-- true: show the graph / false (default): off -->
+      <scale>log</scale>            <!-- log | logarithmic (default) or lin | linear -->
+      <mode>sweep</mode>            <!-- sweep (default): cursor runs left to right and overwrites / scroll: graph moves left -->
+      <height>75</height>           <!-- graph height in % of the video height, 10-90 (default 35) -->
+      <frametypes>true</frametypes> <!-- true: I/P/B frames as amber/green/blue / false (default): all green -->
+      <audio>overlay</audio>        <!-- off (default) / overlay: pink audio bitrate line over the dots / band: in its own strip below -->
     </debugframegraph>
     <debugthreads>
-      <enabled>true</enabled>
-      <count>5</count>
+      <enabled>true</enabled>       <!-- true (default): show the Threads line / false: hide it -->
+      <count>2</count>              <!-- number of threads shown, 1-10 (default 5) -->
     </debugthreads>
   </video>
 </advancedsettings>
+```
+
+5. **Show the Player Debug Info** during playback: with a keyboard press `Ctrl+Shift+O`; on a remote, map `PlayerDebug` to a button with a keymap. On a touch screen, this keymap in `userdata/keymaps/framegraph.xml` opens it with a two-finger long press and the Player Process Info with a two-finger swipe right (Kodi only recognises gestures with up to two fingers):
+
+```xml
+<keymap>
+  <FullScreenVideo>
+    <touch>
+      <longpress pointers="2">PlayerDebug</longpress>
+      <swipe direction="right" pointers="2">PlayerProcessInfo</swipe>
+    </touch>
+  </FullScreenVideo>
+</keymap>
 ```
 
 To see the exact difference against upstream: [compare xbmc:master...isarrider:master](https://github.com/xbmc/xbmc/compare/master...isarrider:xbmc:master).
