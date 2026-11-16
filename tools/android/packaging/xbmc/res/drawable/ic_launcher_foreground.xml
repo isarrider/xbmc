@@ -4,6 +4,9 @@
     android:height="108dp"
     android:viewportWidth="256"
     android:viewportHeight="256">
+  <group android:rotation="180"
+      android:pivotX="128"
+      android:pivotY="128">
   <group android:scaleX="0.585"
       android:scaleY="0.585"
       android:translateX="53.12"
@@ -18,10 +21,11 @@
             android:endX="128.01"
             android:endY="229.74"
             android:type="linear">
-          <item android:offset="0" android:color="#FF33ADDD"/>
-          <item android:offset="1" android:color="#FF148FBF"/>
+          <item android:offset="0" android:color="#FFFFB547"/>
+          <item android:offset="1" android:color="#FFE8890C"/>
         </gradient>
       </aapt:attr>
     </path>
+  </group>
   </group>
 </vector>
