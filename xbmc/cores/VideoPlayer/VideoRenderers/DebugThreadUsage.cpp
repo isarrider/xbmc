@@ -32,17 +32,20 @@ struct ThreadGroup
 
 const std::string& CDebugThreadUsage::GetSummary(int maxEntries)
 {
-  const auto sinceLastRead = std::chrono::steady_clock::now() - m_lastRead;
-  if (sinceLastRead > MAX_SAMPLE_GAP)
+  // Also limit attempts that return nothing, e.g. where the platform cannot tell
+  const auto now = std::chrono::steady_clock::now();
+  if (now - m_lastAttempt < UPDATE_INTERVAL)
+    return m_summary;
+  m_lastAttempt = now;
+
+  if (now - m_lastRead > MAX_SAMPLE_GAP)
   {
     m_lastRead = {};
     m_threadSeconds.clear();
     m_summary.clear();
   }
 
-  if (sinceLastRead >= UPDATE_INTERVAL)
-    Update(static_cast<size_t>(maxEntries));
-
+  Update(static_cast<size_t>(maxEntries));
   return m_summary;
 }
 

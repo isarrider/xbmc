@@ -28,6 +28,7 @@ public:
 private:
   void Update(size_t maxEntries);
 
+  std::chrono::steady_clock::time_point m_lastAttempt;
   std::chrono::steady_clock::time_point m_lastRead;
   std::unordered_map<int, double> m_threadSeconds;
   std::string m_summary;
