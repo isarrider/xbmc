@@ -99,9 +99,11 @@ void CDebugThreadUsage::Update(size_t maxEntries)
   std::vector<std::string> entries;
   for (const auto& group : groups)
   {
-    const long percent = std::lround(group.seconds * 100.0 / elapsed);
-    if (entries.size() >= maxEntries || percent < 1)
+    const double usage = group.seconds * 100.0 / elapsed;
+    if (entries.size() >= maxEntries || usage < 1.0)
       break;
+
+    const long percent = std::lround(usage);
 
     if (group.count > 1)
       entries.push_back(StringUtils::Format("{} x{} {}%", group.name, group.count, percent));
