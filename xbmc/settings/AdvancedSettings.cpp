@@ -255,7 +255,7 @@ void CAdvancedSettings::Initialize()
   m_maxTempo = 1.55f;
   m_videoPreferStereoStream = false;
 
-  m_videoDebugThreads = true;
+  m_videoDebugThreads = false;
   m_videoDebugThreadsCount = 5;
   m_videoDebugThreadsCores = false;
   m_videoDebugThreadsGraph = 0;
@@ -875,7 +875,7 @@ void CAdvancedSettings::ParseSettingsFile(const std::string &file)
     XMLUtils::GetFloat(pElement, "maxtempo", m_maxTempo, 1.5, 2.0);
     XMLUtils::GetBoolean(pElement, "preferstereostream", m_videoPreferStereoStream);
 
-    const TiXmlElement* pDebugGraph = pElement->FirstChildElement("debugframegraph");
+    const TiXmlElement* pDebugGraph = pElement->FirstChildElement("playerdebugframegraph");
     if (pDebugGraph)
     {
       XMLUtils::GetBoolean(pDebugGraph, "enabled", m_videoDebugGraph);
@@ -903,14 +903,14 @@ void CAdvancedSettings::ParseSettingsFile(const std::string &file)
       }
     }
 
-    const TiXmlElement* pDebugThreads = pElement->FirstChildElement("debugthreads");
-    if (pDebugThreads)
+    const TiXmlElement* pDebugCpu = pElement->FirstChildElement("playerdebugcpu");
+    if (pDebugCpu)
     {
-      XMLUtils::GetBoolean(pDebugThreads, "enabled", m_videoDebugThreads);
-      XMLUtils::GetInt(pDebugThreads, "count", m_videoDebugThreadsCount, 1, 10);
-      XMLUtils::GetBoolean(pDebugThreads, "cores", m_videoDebugThreadsCores);
+      XMLUtils::GetBoolean(pDebugCpu, "threads", m_videoDebugThreads);
+      XMLUtils::GetInt(pDebugCpu, "count", m_videoDebugThreadsCount, 1, 10);
+      XMLUtils::GetBoolean(pDebugCpu, "cores", m_videoDebugThreadsCores);
       std::string graph;
-      if (XMLUtils::GetString(pDebugThreads, "graph", graph))
+      if (XMLUtils::GetString(pDebugCpu, "graph", graph))
       {
         if (StringUtils::EqualsNoCase(graph, "off"))
           m_videoDebugThreadsGraph = 0;
