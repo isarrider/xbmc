@@ -147,13 +147,18 @@ void CDebugCoreUsage::Render(const CRect& view, Graph graph)
   if (graph == Graph::OFF || m_history.empty() || view.IsEmpty())
     return;
 
-  const float scale = std::max(view.Height() / 1080.0f, 0.5f);
   const float cores = static_cast<float>(m_history.size());
   const float width = graph == Graph::BARS ? 2 * PADDING + cores * BAR_WIDTH + (cores - 1) * BAR_GAP
                                            : 3 * PADDING + LABEL_WIDTH + PLOT_WIDTH;
   const float height = graph == Graph::BARS
                            ? 2 * PADDING + 2 * (TEXT_HEIGHT + 6) + BAR_HEIGHT
                            : 2 * PADDING + cores * ROW_HEIGHT + (cores - 1) * ROW_GAP;
+  // Shrink the graphic if it would not fit on the screen with many cores
+  const float scale =
+      std::min({std::max(view.Height() / 1080.0f, 0.5f), (view.Width() - 2 * MARGIN) / width,
+                (view.Height() - 2 * MARGIN) / height});
+  if (scale <= 0.0f)
+    return;
   const auto w = static_cast<unsigned int>(std::lround(width * scale));
   const auto h = static_cast<unsigned int>(std::lround(height * scale));
 
