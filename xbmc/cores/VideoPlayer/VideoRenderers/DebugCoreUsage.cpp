@@ -114,7 +114,7 @@ void CDebugCoreUsage::Update()
     return;
 
   const auto cpuInfo = CServiceBroker::GetCPUInfo();
-  if (!cpuInfo || !cpuInfo->SupportsCPUUsage())
+  if (!cpuInfo || !cpuInfo->SupportsCoreUsage())
     return;
 
   if (now - m_lastSample > MAX_SAMPLE_GAP)
@@ -268,13 +268,15 @@ void CDebugCoreUsage::Draw(Graph graph, float scale)
 
   if (graph == Graph::BARS)
   {
-    const int barWidth = px(BAR_WIDTH);
     const int barTop = padding + textHeight + px(6.0f);
     const int barBottom = barTop + px(BAR_HEIGHT);
     for (size_t core = 0; core < m_history.size(); ++core)
     {
       const float usage = std::clamp(m_history[core].back(), 0.0f, 100.0f);
-      const int x = padding + static_cast<int>(core) * px(BAR_WIDTH + BAR_GAP);
+      // Rounded from the absolute position, so the error does not add up over many cores
+      const float barLeft = PADDING + static_cast<float>(core) * (BAR_WIDTH + BAR_GAP);
+      const int x = px(barLeft);
+      const int barWidth = px(barLeft + BAR_WIDTH) - x;
       const int top = barBottom - static_cast<int>(std::lround((barBottom - barTop) * usage / 100));
       fill(x, barTop, x + barWidth, barBottom, COLOR_TRACK);
       fill(x, top, x + barWidth, barBottom, UsageColor(usage));
@@ -287,16 +289,17 @@ void CDebugCoreUsage::Draw(Graph graph, float scale)
     }
 
     // The average of all cores across their bars, and the total in a bar of its own
-    const int coresRight =
-        padding + static_cast<int>(m_history.size()) * px(BAR_WIDTH + BAR_GAP) - px(BAR_GAP);
+    const float coresRight =
+        PADDING + static_cast<float>(m_history.size()) * (BAR_WIDTH + BAR_GAP) - BAR_GAP;
     const int totalTop =
         barBottom - static_cast<int>(std::lround((barBottom - barTop) * total / 100));
-    dashedLine(padding - px(4.0f), coresRight + px(4.0f), totalTop);
+    dashedLine(padding - px(4.0f), px(coresRight + 4.0f), totalTop);
 
-    const int separator = coresRight + px(TOTAL_GAP) / 2;
+    const int separator = px(coresRight + TOTAL_GAP / 2);
     fill(separator, barTop, separator + std::max(1, px(1.0f)), barBottom, COLOR_SEPARATOR);
 
-    const int x = coresRight + px(TOTAL_GAP);
+    const int x = px(coresRight + TOTAL_GAP);
+    const int barWidth = px(coresRight + TOTAL_GAP + BAR_WIDTH) - x;
     fill(x, barTop, x + barWidth, barBottom, COLOR_TRACK);
     fill(x, totalTop, x + barWidth, barBottom, UsageColor(total));
     outline(x, totalTop, x + barWidth, barBottom);
@@ -313,8 +316,9 @@ void CDebugCoreUsage::Draw(Graph graph, float scale)
   {
     const auto& samples = m_history[core];
     const uint32_t color = CORE_COLORS[core % CORE_COLORS.size()];
-    const int top = padding + static_cast<int>(core) * px(ROW_HEIGHT + ROW_GAP);
-    const int bottom = top + px(ROW_HEIGHT);
+    const float rowTop = PADDING + static_cast<float>(core) * (ROW_HEIGHT + ROW_GAP);
+    const int top = px(rowTop);
+    const int bottom = px(rowTop + ROW_HEIGHT);
 
     fill(plotX, top, plotX + plotWidth, bottom, COLOR_TRACK);
     text(padding, (top + bottom - textHeight) / 2, StringUtils::Format("#{}", core));
