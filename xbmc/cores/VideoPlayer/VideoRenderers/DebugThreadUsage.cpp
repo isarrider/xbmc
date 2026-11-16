@@ -8,19 +8,13 @@
 
 #include "DebugThreadUsage.h"
 
+#include "ServiceBroker.h"
+#include "utils/CPUInfo.h"
 #include "utils/StringUtils.h"
 
 #include <algorithm>
 #include <cmath>
-#include <cstdlib>
-#include <fstream>
-#include <sstream>
 #include <vector>
-
-#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
-#include <dirent.h>
-#include <unistd.h>
-#endif
 
 namespace
 {
@@ -31,7 +25,7 @@ constexpr auto MAX_SAMPLE_GAP = std::chrono::seconds(3);
 struct ThreadGroup
 {
   std::string name;
-  uint64_t ticks{0};
+  double seconds{0.0};
   int count{0};
 };
 } // namespace
@@ -42,7 +36,7 @@ const std::string& CDebugThreadUsage::GetSummary(int maxEntries)
   if (sinceLastRead > MAX_SAMPLE_GAP)
   {
     m_lastRead = {};
-    m_threadTicks.clear();
+    m_threadSeconds.clear();
     m_summary.clear();
   }
 
@@ -54,79 +48,55 @@ const std::string& CDebugThreadUsage::GetSummary(int maxEntries)
 
 void CDebugThreadUsage::Update(size_t maxEntries)
 {
-#if defined(TARGET_LINUX) || defined(TARGET_ANDROID)
-  DIR* dir = opendir("/proc/self/task");
-  if (!dir)
+  const auto cpuInfo = CServiceBroker::GetCPUInfo();
+  if (!cpuInfo)
+    return;
+
+  const std::vector<ThreadCpuTime> threads = cpuInfo->GetThreadCpuTimes();
+  if (threads.empty())
     return;
 
   const auto now = std::chrono::steady_clock::now();
   const bool haveBaseline = m_lastRead != std::chrono::steady_clock::time_point{};
   const double elapsed = std::chrono::duration<double>(now - m_lastRead).count();
 
-  std::unordered_map<int, uint64_t> threadTicks;
+  std::unordered_map<int, double> threadSeconds;
   std::vector<ThreadGroup> groups;
-
-  while (const dirent* entry = readdir(dir))
+  for (const auto& thread : threads)
   {
-    if (entry->d_name[0] == '.')
-      continue;
-
-    std::ifstream file(std::string("/proc/self/task/") + entry->d_name + "/stat");
-    std::string line;
-    if (!std::getline(file, line))
-      continue;
-
-    // The thread name (field 2) is in parentheses and may itself contain them
-    const auto open = line.find('(');
-    const auto close = line.rfind(')');
-    if (open == std::string::npos || close == std::string::npos || close < open)
-      continue;
-
-    std::istringstream ss(line.substr(close + 1));
-    std::string field;
-    uint64_t ticks = 0;
-    for (int i = 3; i <= 15 && ss >> field; i++)
-    {
-      if (i == 14 || i == 15) // utime, stime
-        ticks += std::strtoull(field.c_str(), nullptr, 10);
-    }
-
-    const int tid = std::atoi(entry->d_name);
-    threadTicks[tid] = ticks;
+    threadSeconds[thread.id] = thread.seconds;
 
     // A thread without a previous sample started within the interval
-    const auto prev = m_threadTicks.find(tid);
-    const uint64_t delta =
-        (prev != m_threadTicks.end() && prev->second <= ticks) ? ticks - prev->second : ticks;
+    const auto prev = m_threadSeconds.find(thread.id);
+    const double delta = prev != m_threadSeconds.end() && prev->second <= thread.seconds
+                             ? thread.seconds - prev->second
+                             : thread.seconds;
 
-    const std::string name = line.substr(open + 1, close - open - 1);
     auto group = std::find_if(groups.begin(), groups.end(),
-                              [&name](const ThreadGroup& g) { return g.name == name; });
+                              [&thread](const ThreadGroup& g) { return g.name == thread.name; });
     if (group == groups.end())
     {
-      groups.push_back({name, 0, 0});
+      groups.push_back({thread.name, 0.0, 0});
       group = groups.end() - 1;
     }
-    group->ticks += delta;
+    group->seconds += delta;
     group->count++;
   }
-  closedir(dir);
 
-  m_threadTicks = std::move(threadTicks);
+  m_threadSeconds = std::move(threadSeconds);
   m_lastRead = now;
 
   // The first read only establishes a baseline
-  const double elapsedTicks = elapsed * static_cast<double>(sysconf(_SC_CLK_TCK));
-  if (!haveBaseline || elapsedTicks <= 0)
+  if (!haveBaseline || elapsed <= 0)
     return;
 
   std::sort(groups.begin(), groups.end(),
-            [](const ThreadGroup& a, const ThreadGroup& b) { return a.ticks > b.ticks; });
+            [](const ThreadGroup& a, const ThreadGroup& b) { return a.seconds > b.seconds; });
 
   std::vector<std::string> entries;
   for (const auto& group : groups)
   {
-    const long percent = std::lround(static_cast<double>(group.ticks) * 100.0 / elapsedTicks);
+    const long percent = std::lround(group.seconds * 100.0 / elapsed);
     if (entries.size() >= maxEntries || percent < 1)
       break;
 
@@ -136,5 +106,4 @@ void CDebugThreadUsage::Update(size_t maxEntries)
       entries.push_back(StringUtils::Format("{} {}%", group.name, percent));
   }
   m_summary = StringUtils::Join(entries, ", ");
-#endif
 }
