@@ -8,6 +8,7 @@
 
 #pragma once
 
+#include "DebugCoreUsage.h"
 #include "DebugFrameGraph.h"
 #include "DebugInfo.h"
 #include "DebugThreadUsage.h"
@@ -50,6 +51,8 @@ protected:
   CRenderer m_overlayRenderer;
   CDebugFrameGraph m_frameGraph;
   CDebugThreadUsage m_threadUsage;
+  CDebugCoreUsage m_coreUsage;
+  CDebugCoreUsage::Graph m_coreGraph{CDebugCoreUsage::Graph::OFF};
   bool m_showFrameGraph{false};
 
 private:
