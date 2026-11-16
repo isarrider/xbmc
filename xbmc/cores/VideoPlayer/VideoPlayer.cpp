@@ -1814,7 +1814,10 @@ void CVideoPlayer::Process()
     {
       // when paused, demuxer could be be returning empty
       if (m_playSpeed == DVD_PLAYSPEED_PAUSE)
+      {
+        CThread::Sleep(10ms);
         continue;
+      }
 
       // check for a still frame state
       if (std::shared_ptr<CDVDInputStream::IMenus> pStream = std::dynamic_pointer_cast<CDVDInputStream::IMenus>(m_pInputStream))
@@ -3536,6 +3539,16 @@ void CVideoPlayer::HandleMessages()
         }
         else if (!st.IsCurrent(m_CurrentAudio))
         {
+#if defined(HAVE_LIBBLURAY)
+          if (STREAM_SOURCE_MASK(st.source) == STREAM_SOURCE_DEMUX && m_pDemuxer &&
+              m_pInputStream && m_pInputStream->IsStreamType(DVDSTREAM_TYPE_BLURAY))
+          {
+            CDemuxStream* stream = m_pDemuxer->GetStream(st.demuxerId, st.id);
+            if (stream && std::static_pointer_cast<CDVDInputStreamBluray>(m_pInputStream)
+                              ->SetActiveAudioStream(stream->dvdNavId))
+              m_dvd.iSelectedAudioStream = stream->dvdNavId;
+          }
+#endif
           CloseStream(m_CurrentAudio, false);
           OpenStream(m_CurrentAudio, st.demuxerId, st.id, st.source);
           AdaptForcedSubtitles();
@@ -3605,6 +3618,17 @@ void CVideoPlayer::HandleMessages()
         }
         else if (!st.IsCurrent(m_CurrentSubtitle) || m_CurrentSubtitle.demuxDisabled)
         {
+#if defined(HAVE_LIBBLURAY)
+          if (STREAM_SOURCE_MASK(st.source) == STREAM_SOURCE_DEMUX && m_pDemuxer &&
+              m_pInputStream && m_pInputStream->IsStreamType(DVDSTREAM_TYPE_BLURAY))
+          {
+            CDemuxStream* stream = m_pDemuxer->GetStream(st.demuxerId, st.id);
+            if (stream && std::static_pointer_cast<CDVDInputStreamBluray>(m_pInputStream)
+                              ->SetActiveSubtitleStream(stream->dvdNavId,
+                                                        m_VideoPlayerVideo->IsSubtitleEnabled()))
+              m_dvd.iSelectedSPUStream = stream->dvdNavId;
+          }
+#endif
           // a stream disabled in the demuxer is only enabled again by a reopen
           ReopenSubtitleStream(st);
         }
@@ -3635,6 +3659,12 @@ void CVideoPlayer::HandleMessages()
         SetEnableStream(m_CurrentSubtitle, false);
 
       SetSubtitleVisibleInternal(isVisible);
+
+#if defined(HAVE_LIBBLURAY)
+      if (m_pInputStream && m_pInputStream->IsStreamType(DVDSTREAM_TYPE_BLURAY))
+        std::static_pointer_cast<CDVDInputStreamBluray>(m_pInputStream)
+            ->SetSubtitleVisible(isVisible);
+#endif
 
       // Image type subtitles (e.g. VOBSUB) can support "forced" flag on overlays (images)
       // so you need to keep the stream open to parse "forced" flag on each image
@@ -4554,6 +4584,10 @@ bool CVideoPlayer::OpenStream(CCurrentStream& current, int64_t demuxerId, int iS
   CDemuxStream* stream = NULL;
   CDVDStreamInfo hint;
 
+  // CloseFile() is waiting for this thread
+  if (m_bStop)
+    return false;
+
   CLog::Log(LOGINFO, "Opening stream: {} source: {}", iStream, source);
 
   if(STREAM_SOURCE_MASK(source) == STREAM_SOURCE_DEMUX_SUB)
@@ -4696,7 +4730,7 @@ bool CVideoPlayer::OpenStream(CCurrentStream& current, int64_t demuxerId, int iS
   }
   else
   {
-    if(stream)
+    if (stream && !m_bStop)
     {
       /* mark stream as disabled, to disallow further attempts*/
       CLog::Log(LOGWARNING, "{} - Unsupported stream {}. Stream disabled.", __FUNCTION__,
@@ -4812,7 +4846,11 @@ bool CVideoPlayer::OpenVideoStream(CDVDStreamInfo& hint, bool reset)
                                                    (hint.fpsrate * (hint.interlaced ? 2 : 1)));
 
       RESOLUTION res = CResolutionUtils::ChooseBestResolution(static_cast<float>(framerate), hint.width, hint.height, !hint.stereo_mode.empty());
-      CServiceBroker::GetWinSystem()->GetGfxContext().SetVideoResolution(res, false);
+      // CloseFile() blocks the app thread in StopThread(), don't wait for it past that
+      CServiceBroker::GetWinSystem()->GetGfxContext().SetVideoResolution(res, false,
+                                                                         &GetStopEvent());
+      if (m_bStop)
+        return false;
       m_renderManager.TriggerUpdateResolution(framerate, hint.width, hint.height, hint.stereo_mode);
     }
   }
