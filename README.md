@@ -54,12 +54,12 @@ Merged upstream:
       <scale>log</scale>            <!-- log | logarithmic (default) or lin | linear -->
       <mode>sweep</mode>            <!-- sweep (default): cursor runs left to right and overwrites / scroll: graph moves left -->
       <height>75</height>           <!-- graph height in % of the video height, 10-90 (default 35) -->
-      <frametypes>true</frametypes> <!-- true: I/P/B frames as amber/green/blue / false (default): all green -->
+      <frametypes>true</frametypes> <!-- true: I/P/B frames as amber/green/blue / false (default): keyframes amber, others green -->
       <audio>overlay</audio>        <!-- off (default) / overlay: pink audio bitrate line over the dots / band: in its own strip below -->
     </playerdebugframegraph>
     <playerdebugcpu>
       <threads>true</threads>       <!-- true: show the Threads line / false (default): hide it -->
-      <count>2</count>              <!-- number of threads shown, 1-10 (default 5) -->
+      <count>5</count>              <!-- number of threads shown, 1-10 (default 5) -->
       <cores>true</cores>           <!-- true: show the Cores line / false (default): hide it -->
       <graph>bars</graph>           <!-- off (default) / bars: one bar per core / history: last minute per core, top right -->
     </playerdebugcpu>
