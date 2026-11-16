@@ -23,7 +23,7 @@
 
 ## About this fork
 
-This is [isarrider/xbmc](https://github.com/isarrider/xbmc), a fork of [xbmc/xbmc](https://github.com/xbmc/xbmc). It follows upstream `master` and adds the changes below, which are not in upstream yet. This fork's `master` contains all of them, and the Android test builds are made from it. Each change also lives on its own branch, from which it is (or is meant to be) proposed upstream. Once upstream merges a change, it moves to the list of merged changes below the table.
+This is [isarrider/xbmc](https://github.com/isarrider/xbmc), a fork of [xbmc/xbmc](https://github.com/xbmc/xbmc). It follows upstream `master` and adds the changes below, which are not in upstream yet. This fork's `master` contains all of them, and the Android test builds are made from it. Each change also lives on its own branch, from which it is (or is meant to be) proposed upstream. Once upstream merges a change, its row is removed here, and all upstream PRs are listed in the PR history below.
 
 | Change | Settings (`advancedsettings.xml`) | Upstream |
 |---|---|---|
@@ -32,12 +32,21 @@ This is [isarrider/xbmc](https://github.com/isarrider/xbmc), a fork of [xbmc/xbm
 | **CPU usage per core in the Player Debug Info.** A `Cores:` line above `Threads:` with each core's usage and the total, and a graphic in the top right corner: one bar per core, or each core's usage over the last minute. On Android this is Kodi's own usage, elsewhere the whole system's. Sampled once a second while the overlay is shown; the graphic is one small texture with its own pixel font, freed when the overlay is closed. | `video/playerdebugcpu`: `cores` `true`/`false` (default), `graph` `off` (default), `bars` or `history` | [#30596](https://github.com/xbmc/xbmc/pull/30596), branch [`debug-cpu-cores`](https://github.com/isarrider/xbmc/tree/debug-cpu-cores), needs #30573 |
 | **GitHub Actions on Node 24.** Kodi's own workflows use the current major versions of their actions, and the deprecated `set-output` command is replaced. | – | [#30547](https://github.com/xbmc/xbmc/pull/30547), branch [`workflows-node24`](https://github.com/isarrider/xbmc/tree/workflows-node24) |
 | **Threaded VC-1 decoding.** The internal FFmpeg gets frame threading for the VC-1 decoder from [isarrider/FFmpeg](https://github.com/isarrider/FFmpeg), so VC-1 without a hardware decoder uses several cores (tested on a Fire TV Stick 4K Max and a Pixel 8 Pro). | – | fork only, branch [`ffmpeg-vc1-threading`](https://github.com/isarrider/xbmc/tree/ffmpeg-vc1-threading); belongs upstream in FFmpeg |
-| **Android test builds.** A manually started workflow builds signed APKs for `armeabi-v7a` or `arm64-v8a` from any branch, as package `org.xbmc.kodi.isarrider`, so they install next to the official Kodi. They have their own app icon, the Kodi logo in orange on a dark background, upside down. | – | fork only |
+| **Android test builds.** A manually started workflow builds signed APKs for `armeabi-v7a` or `arm64-v8a` from any branch, as package `org.xbmc.kodi.isarrider`, so they install next to the official Kodi. | – | fork only |
+| **Own icon for the test builds.** The Kodi logo in orange on a dark background, upside down, so the test builds can be told apart from the official Kodi: as the app icon (also the themed and the Android 7 icons), on the banner that Fire TV and Android TV show on the home screen and in the recently used apps, and as the notification icon. | – | fork only |
 
-Merged upstream:
+### Upstream PR history
 
-- **Kodi's own CPU usage on Android.** Since Android 8, apps can't read `/proc/stat`, so the debug overlay showed `CPU: N/A`. It now shows Kodi's own CPU usage in total and per core, which also makes it easy to see whether hardware decoding works. [#30132](https://github.com/xbmc/xbmc/pull/30132) (master, Kodi 23), backported to Kodi 22 "Piers" in [#30309](https://github.com/xbmc/xbmc/pull/30309) (in 22.0 RC2).
-- **Thread names on Android, long names on Linux.** Kodi's threads get their names on Android too, so they can be told apart in `top -H`, profilers and crash reports. Names longer than 15 characters were rejected by the OS and are now cut to 15. [#30548](https://github.com/xbmc/xbmc/pull/30548) (master), backported to Kodi 22 "Piers" in [#30549](https://github.com/xbmc/xbmc/pull/30549).
+| PR | What | State |
+|---|---|---|
+| [#30132](https://github.com/xbmc/xbmc/pull/30132) | Kodi's own CPU usage on Android, in total and per core. Since Android 8 apps can't read `/proc/stat`, so the debug overlay showed `CPU: N/A`. | merged (master, Kodi 23) |
+| [#30309](https://github.com/xbmc/xbmc/pull/30309) | Backport of #30132 to Kodi 22 "Piers" | merged (in 22.0 RC2) |
+| [#30548](https://github.com/xbmc/xbmc/pull/30548) | Thread names on Android, and names longer than 15 characters cut instead of rejected | merged (master, Kodi 23) |
+| [#30549](https://github.com/xbmc/xbmc/pull/30549) | Backport of #30548 to Kodi 22 "Piers" | merged |
+| [#30498](https://github.com/xbmc/xbmc/pull/30498) | Frame size graph with audio line in the Player Debug Info | open |
+| [#30547](https://github.com/xbmc/xbmc/pull/30547) | GitHub Actions on Node 24 | open |
+| [#30573](https://github.com/xbmc/xbmc/pull/30573) | CPU usage per thread in the Player Debug Info | open |
+| [#30596](https://github.com/xbmc/xbmc/pull/30596) | CPU usage per core in the Player Debug Info, graphic in the top right | open, needs #30573 |
 
 ### Using the test builds
 
