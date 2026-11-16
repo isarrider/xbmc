@@ -49,6 +49,12 @@ Merged upstream:
 ```xml
 <advancedsettings>
   <video>
+    <playerdebugcpu>
+      <threads>true</threads>       <!-- true: show the Threads line / false (default): hide it -->
+      <count>5</count>              <!-- number of threads shown, 1-10 (default 5) -->
+      <cores>true</cores>           <!-- true: show the Cores line / false (default): hide it -->
+      <graph>bars</graph>           <!-- off (default) / bars: one bar per core / history: last minute per core, top right -->
+    </playerdebugcpu>
     <playerdebugframegraph>
       <enabled>true</enabled>       <!-- true: show the graph / false (default): off -->
       <scale>log</scale>            <!-- log | logarithmic (default) or lin | linear -->
@@ -57,12 +63,6 @@ Merged upstream:
       <frametypes>true</frametypes> <!-- true: I/P/B frames as amber/green/blue / false (default): keyframes amber, others green -->
       <audio>overlay</audio>        <!-- off (default) / overlay: pink audio bitrate line over the dots / band: in its own strip below -->
     </playerdebugframegraph>
-    <playerdebugcpu>
-      <threads>true</threads>       <!-- true: show the Threads line / false (default): hide it -->
-      <count>5</count>              <!-- number of threads shown, 1-10 (default 5) -->
-      <cores>true</cores>           <!-- true: show the Cores line / false (default): hide it -->
-      <graph>bars</graph>           <!-- off (default) / bars: one bar per core / history: last minute per core, top right -->
-    </playerdebugcpu>
   </video>
 </advancedsettings>
 ```
