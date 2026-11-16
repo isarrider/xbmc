@@ -33,6 +33,8 @@ constexpr uint32_t COLOR_TEXT = 0xFFE6E6E6;
 constexpr uint32_t COLOR_LOW = 0xFF3DDC84;
 constexpr uint32_t COLOR_MEDIUM = 0xFFFFB547;
 constexpr uint32_t COLOR_HIGH = 0xFFE5484D;
+constexpr uint32_t COLOR_LINE = 0xE6FFFFFF;
+constexpr uint32_t COLOR_SEPARATOR = 0x5AFFFFFF;
 constexpr std::array<uint32_t, 4> CORE_COLORS = {0xFF3DDC84, 0xFF3F8CFF, 0xFFFFB547, 0xFFFF6AD5};
 
 // Sizes for a 1080 pixel high screen
@@ -44,12 +46,15 @@ constexpr float BAR_HEIGHT = 150.0f;
 constexpr float ROW_HEIGHT = 44.0f;
 constexpr float ROW_GAP = 8.0f;
 constexpr float PLOT_WIDTH = 300.0f;
+constexpr float TOTAL_GAP = 26.0f; //!< between the last core's bar and the total's in bars mode
+constexpr float TOTAL_WIDTH = 30.0f; //!< of the total's bar in history mode
 
-//! 5x7 pixel digits, '#' and '%', one row per entry, bit 4 is the left column
-constexpr std::string_view GLYPH_CHARS = "0123456789#%";
+//! 5x7 pixel digits, '#', '%' and a sigma written as 'S', one row per entry, bit 4 is the
+//! left column
+constexpr std::string_view GLYPH_CHARS = "0123456789#%S";
 constexpr int GLYPH_WIDTH = 5;
 constexpr int GLYPH_HEIGHT = 7;
-constexpr std::array<std::array<uint8_t, GLYPH_HEIGHT>, 12> GLYPHS = {{
+constexpr std::array<std::array<uint8_t, GLYPH_HEIGHT>, 13> GLYPHS = {{
     {0x0E, 0x11, 0x13, 0x15, 0x19, 0x11, 0x0E},
     {0x04, 0x0C, 0x04, 0x04, 0x04, 0x04, 0x0E},
     {0x0E, 0x11, 0x01, 0x02, 0x04, 0x08, 0x1F},
@@ -62,6 +67,7 @@ constexpr std::array<std::array<uint8_t, GLYPH_HEIGHT>, 12> GLYPHS = {{
     {0x0E, 0x11, 0x11, 0x0F, 0x01, 0x02, 0x0C},
     {0x0A, 0x0A, 0x1F, 0x0A, 0x1F, 0x0A, 0x0A},
     {0x18, 0x19, 0x02, 0x04, 0x08, 0x13, 0x03},
+    {0x1F, 0x10, 0x08, 0x04, 0x08, 0x10, 0x1F},
 }};
 //! Size of one glyph pixel
 constexpr float FONT = 2.0f;
@@ -148,8 +154,9 @@ void CDebugCoreUsage::Render(const CRect& view, Graph graph)
     return;
 
   const float cores = static_cast<float>(m_history.size());
-  const float width = graph == Graph::BARS ? 2 * PADDING + cores * BAR_WIDTH + (cores - 1) * BAR_GAP
-                                           : 3 * PADDING + LABEL_WIDTH + PLOT_WIDTH;
+  const float width = graph == Graph::BARS ? 2 * PADDING + (cores + 1) * BAR_WIDTH +
+                                                 (cores - 1) * BAR_GAP + TOTAL_GAP
+                                           : 4 * PADDING + LABEL_WIDTH + PLOT_WIDTH + TOTAL_WIDTH;
   const float height = graph == Graph::BARS
                            ? 2 * PADDING + 2 * (TEXT_HEIGHT + 6) + BAR_HEIGHT
                            : 2 * PADDING + cores * ROW_HEIGHT + (cores - 1) * ROW_GAP;
@@ -237,8 +244,27 @@ void CDebugCoreUsage::Draw(Graph graph, float scale)
     }
   };
 
+  const auto dashedLine = [&](int x1, int x2, int y)
+  {
+    const int dash = std::max(1, px(6.0f));
+    const int gap = std::max(1, px(4.0f));
+    const int thickness = std::max(1, px(1.5f));
+    for (int x = x1; x < x2; x += dash + gap)
+      fill(x, y, std::min(x + dash, x2), y + thickness, COLOR_LINE);
+  };
+  const auto outline = [&](int x1, int y1, int x2, int y2)
+  {
+    const int t = std::max(1, px(2.0f));
+    fill(x1, y1, x2, y1 + t, COLOR_TEXT);
+    fill(x1, y2 - t, x2, y2, COLOR_TEXT);
+    fill(x1, y1, x1 + t, y2, COLOR_TEXT);
+    fill(x2 - t, y1, x2, y2, COLOR_TEXT);
+  };
+
   const int padding = px(PADDING);
   const int textHeight = GLYPH_HEIGHT * font;
+  const float total = std::clamp(static_cast<float>(m_total), 0.0f, 100.0f);
+  const std::string totalValue = StringUtils::Format("{}%", static_cast<int>(total));
 
   if (graph == Graph::BARS)
   {
@@ -259,11 +285,30 @@ void CDebugCoreUsage::Draw(Graph graph, float scale)
       const std::string label = StringUtils::Format("#{}", core);
       text(x + (barWidth - textWidth(label)) / 2, barBottom + px(6.0f), label);
     }
+
+    // The average of all cores across their bars, and the total in a bar of its own
+    const int coresRight =
+        padding + static_cast<int>(m_history.size()) * px(BAR_WIDTH + BAR_GAP) - px(BAR_GAP);
+    const int totalTop =
+        barBottom - static_cast<int>(std::lround((barBottom - barTop) * total / 100));
+    dashedLine(padding - px(4.0f), coresRight + px(4.0f), totalTop);
+
+    const int separator = coresRight + px(TOTAL_GAP) / 2;
+    fill(separator, barTop, separator + std::max(1, px(1.0f)), barBottom, COLOR_SEPARATOR);
+
+    const int x = coresRight + px(TOTAL_GAP);
+    fill(x, barTop, x + barWidth, barBottom, COLOR_TRACK);
+    fill(x, totalTop, x + barWidth, barBottom, UsageColor(total));
+    outline(x, totalTop, x + barWidth, barBottom);
+    text(x + (barWidth - textWidth(totalValue)) / 2,
+         std::max(totalTop - textHeight - font, padding), totalValue);
+    text(x + (barWidth - textWidth("S")) / 2, barBottom + px(6.0f), "S");
     return;
   }
 
   const int plotX = padding + px(LABEL_WIDTH) + padding;
-  const int plotWidth = w - plotX - padding;
+  const int totalWidth = px(TOTAL_WIDTH);
+  const int plotWidth = w - plotX - padding - totalWidth - padding;
   for (size_t core = 0; core < m_history.size(); ++core)
   {
     const auto& samples = m_history[core];
@@ -281,6 +326,7 @@ void CDebugCoreUsage::Draw(Graph graph, float scale)
              static_cast<int>(std::lround((bottom - top) * std::clamp(usage, 0.0f, 100.0f) / 100));
     };
     int prevY = -1;
+    int firstX = plotWidth;
     for (int x = 0; x < plotWidth; ++x)
     {
       const float position = static_cast<float>(x) * (HISTORY_SAMPLES - 1) /
@@ -294,13 +340,32 @@ void CDebugCoreUsage::Draw(Graph graph, float scale)
                               ? samples[index] + (samples[index + 1] - samples[index]) * fraction
                               : samples[index];
       const int y = toY(usage);
+      firstX = std::min(firstX, x);
       fill(plotX + x, y, plotX + x + 1, bottom, (color & 0x00FFFFFF) | 0x5A000000);
       const int fromY = prevY < 0 ? y : prevY;
       fill(plotX + x, std::min(fromY, y), plotX + x + 1, std::max(fromY, y) + px(2.0f), color);
       prevY = y;
     }
 
+    // This core's average over the samples shown
+    float sum = 0.0f;
+    for (const float sample : samples)
+      sum += sample;
+    dashedLine(plotX + firstX, plotX + plotWidth, toY(sum / static_cast<float>(samples.size())));
+
     const std::string value = StringUtils::Format("{:.0f}%", static_cast<double>(samples.back()));
     text(plotX + plotWidth - textWidth(value) - font, top + font, value);
   }
+
+  // The total of all cores in a bar as high as all rows
+  const int x = plotX + plotWidth + padding;
+  const int barTop = padding + textHeight + font;
+  const int barBottom = h - padding;
+  const int totalTop =
+      barBottom - static_cast<int>(std::lround((barBottom - barTop) * total / 100));
+  fill(x, barTop, x + totalWidth, barBottom, COLOR_TRACK);
+  fill(x, totalTop, x + totalWidth, barBottom, UsageColor(total));
+  outline(x, totalTop, x + totalWidth, barBottom);
+  text(x + (totalWidth - textWidth(totalValue)) / 2,
+       std::max(totalTop - textHeight - font, padding / 2), totalValue);
 }
