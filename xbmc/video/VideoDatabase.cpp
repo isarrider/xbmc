@@ -80,6 +80,7 @@
 #include <iterator>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <ranges>
 #include <set>
 #include <string>
@@ -191,6 +192,19 @@ CTextureCache::UncachedImage UncachedArt(bool cachedByScan)
           CSettings::SETTING_VIDEOLIBRARY_RETRIEVEALLARTONEXPORT))
     return CTextureCache::UncachedImage::SKIP;
   return cachedByScan ? CTextureCache::UncachedImage::CACHE : CTextureCache::UncachedImage::COPY;
+}
+
+// Each folder below a path looks its scraper up again, so a missing one is logged only once
+void LogMissingScraper(const std::string& scraperID)
+{
+  static std::mutex mutex;
+  static std::set<std::string, std::less<>> logged;
+  std::unique_lock lock{mutex};
+  if (logged.insert(scraperID).second)
+    CLog::Log(LOGWARNING,
+              "Scraper add-on '{}' isn't installed or is disabled, so the paths set to it have no "
+              "scraper",
+              scraperID);
 }
 } // unnamed namespace
 
@@ -4979,30 +4993,39 @@ void CVideoDatabase::GetDetailsFromDB(const dbiplus::sql_record* const record,
   }
 }
 
+CVideoDatabase::GetResult CVideoDatabase::TryGetDetailsByTypeAndId(
+    MEDIA::TYPE type,
+    int id,
+    CVideoInfoTag& details,
+    CFileItem* item /* = nullptr */,
+    int getDetails /* = VideoDbDetailsAll */,
+    int idVersion /* = -1 */,
+    int idFile /* = -1 */)
+{
+  switch (type)
+  {
+    case MEDIA::TYPE::MOVIE:
+      return TryGetMovieInfo("", details, id, idVersion, idFile, getDetails);
+    case MEDIA::TYPE::VIDEO_COLLECTION:
+      return TryGetSetInfo(id, details, item);
+    case MEDIA::TYPE::TV_SHOW:
+      return TryGetTvShowInfo("", details, id, item, getDetails);
+    case MEDIA::TYPE::SEASON:
+      return TryGetSeasonInfo(id, details, item);
+    case MEDIA::TYPE::EPISODE:
+      return TryGetEpisodeInfo("", details, id, getDetails);
+    case MEDIA::TYPE::MUSIC_VIDEO:
+      return TryGetMusicVideoInfo("", details, id, getDetails);
+    default:
+      return GetResult::NotFound;
+  }
+}
+
 bool CVideoDatabase::GetDetailsByTypeAndId(CFileItem& item, VideoDbContentType type, int id)
 {
   CVideoInfoTag details;
-  details.Reset();
-
-  switch (type)
-  {
-    case VideoDbContentType::MOVIES:
-      GetMovieInfo("", details, id);
-      break;
-    case VideoDbContentType::TVSHOWS:
-      GetTvShowInfo("", details, id, &item);
-      break;
-    case VideoDbContentType::EPISODES:
-      GetEpisodeInfo("", details, id);
-      break;
-    case VideoDbContentType::MUSICVIDEOS:
-      GetMusicVideoInfo("", details, id);
-      break;
-    default:
-      return false;
-  }
-
-  if (details.m_iDbId < 0)
+  if (TryGetDetailsByTypeAndId(DatabaseUtils::MediaTypeFromVideoContentType(type), id, details,
+                               &item) != GetResult::Ok)
     return false;
 
   item.SetFromVideoInfoTag(details);
@@ -6619,20 +6642,29 @@ void CVideoDatabase::SetStackTimes(const std::string& filePath,
 void CVideoDatabase::RemoveContentForPath(const std::string& strPath,
                                           CGUIDialogProgress* progress /* = nullptr */)
 {
-  if(URIUtils::IsMultiPath(strPath))
-  {
-    std::vector<std::string> paths;
-    CMultiPathDirectory::GetPaths(strPath, paths);
-
-    for (const auto& path : paths)
-      RemoveContentForPath(path, progress);
-  }
-
   try
   {
     if (nullptr == m_pDB)
       return;
     if (nullptr == m_pDS)
+      return;
+
+    // The records under the path, and for a multipath those under each of its paths, so that one
+    // progress dialog covers them all
+    std::vector<std::pair<int, std::string>> paths;
+    std::vector<std::string> pending{strPath};
+    while (!pending.empty())
+    {
+      const std::string pendingPath{std::move(pending.back())};
+      pending.pop_back();
+      GetSubPaths(pendingPath, paths, false);
+      std::vector<std::string> multiPaths;
+      if (URIUtils::IsMultiPath(pendingPath) &&
+          CMultiPathDirectory::GetPaths(pendingPath, multiPaths))
+        pending.insert(pending.end(), multiPaths.begin(), multiPaths.end());
+    }
+    // Nothing to remove, so no progress to show
+    if (paths.empty())
       return;
 
     if (progress)
@@ -6645,8 +6677,6 @@ void CVideoDatabase::RemoveContentForPath(const std::string& strPath,
       progress->Open();
       progress->ShowProgressBar(true);
     }
-    std::vector<std::pair<int, std::string> > paths;
-    GetSubPaths(strPath, paths, false);
     int iCurr = 0;
     for (const auto& [pathId, path] : paths)
     {
@@ -9299,6 +9329,8 @@ ScraperPtr CVideoDatabase::GetScraperForPath(const std::string& strPath,
     AddonPtr addon;
     const bool found =
         CServiceBroker::GetAddonMgr().GetAddon(scraperID, addon, ADDON::OnlyEnabled::CHOICE_YES);
+    if (!found)
+      LogMissingScraper(scraperID);
     auto scraper = found ? std::dynamic_pointer_cast<CScraper>(addon) : nullptr;
 
     if (scraper)
@@ -9427,8 +9459,10 @@ ScraperPtr CVideoDatabase::GetScraperForPath(const std::string& strPath,
               settings.recurse = m_pDS->fv("path.scanRecursive").get_asInt();
               settings.noupdate = m_pDS->fv("path.noUpdate").get_asBool();
               settings.exclude = false;
-              break;
             }
+            // The first folder up with content decides, as the path's own row does. Without its
+            // scraper there is none, rather than one set further up for other folders.
+            break;
           }
         }
         strPath1 = strParent;
