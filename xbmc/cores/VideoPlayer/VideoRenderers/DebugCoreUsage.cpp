@@ -122,12 +122,13 @@ void CDebugCoreUsage::Update()
   m_lastSample = now;
 
   m_total = cpuInfo->GetUsedPercentage();
-  const int cores = cpuInfo->GetCPUCount();
-  m_history.resize(static_cast<size_t>(std::max(cores, 0)));
-  for (int core = 0; core < cores; ++core)
+  // Not GetCPUCount(), which on Windows only counts the current processor group
+  const auto& cores = cpuInfo->GetCores();
+  m_history.resize(cores.size());
+  for (size_t core = 0; core < cores.size(); ++core)
   {
-    auto& samples = m_history[static_cast<size_t>(core)];
-    samples.push_back(static_cast<float>(cpuInfo->GetCoreInfo(core).m_usagePercent));
+    auto& samples = m_history[core];
+    samples.push_back(static_cast<float>(cores[core].m_usagePercent));
     if (samples.size() > HISTORY_SAMPLES)
       samples.erase(samples.begin());
   }

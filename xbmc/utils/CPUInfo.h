@@ -84,7 +84,7 @@ public:
   static std::shared_ptr<CCPUInfo> GetCPUInfo();
 
   virtual bool SupportsCPUUsage() const { return true; }
-  //! Whether GetCoreInfo() has the usage of each core, updated by GetUsedPercentage()
+  //! Whether GetCores() has the usage of each core, updated by GetUsedPercentage()
   virtual bool SupportsCoreUsage() const { return false; }
   //! CPU time used by each of Kodi's threads, empty where the platform cannot tell
   virtual std::vector<ThreadCpuTime> GetThreadCpuTimes() { return {}; }
@@ -95,6 +95,7 @@ public:
 
   bool HasCoreId(int coreId) const;
   const CoreInfo GetCoreInfo(int coreId);
+  const std::vector<CoreInfo>& GetCores() const { return m_cores; }
   std::string GetCoresUsageString();
 
   unsigned int GetCPUFeatures() const { return m_cpuFeatures; }
