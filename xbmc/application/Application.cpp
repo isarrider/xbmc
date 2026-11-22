@@ -49,6 +49,7 @@
 #include "application/ApplicationVolumeHandling.h"
 #include "cores/AudioEngine/Engines/ActiveAE/ActiveAE.h"
 #include "cores/FFmpeg.h"
+#include "cores/VideoPlayer/VideoRenderers/DebugProbe.h"
 #include "cores/playercorefactory/PlayerCoreFactory.h"
 #include "dialogs/GUIDialogBusy.h"
 #include "dialogs/GUIDialogCache.h"
@@ -774,6 +775,8 @@ bool CApplication::Initialize()
   {
     CLog::Log(LOGERROR, "Application - Init3 failed");
   }
+
+  KODI::DEBUGPROBE::LogOnce();
 
   if (guiCreated)
   {
