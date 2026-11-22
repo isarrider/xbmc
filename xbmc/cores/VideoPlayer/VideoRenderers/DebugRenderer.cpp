@@ -8,6 +8,7 @@
 
 #include "DebugRenderer.h"
 
+#include "DebugProbe.h"
 #include "cores/VideoPlayer/DVDCodecs/Overlay/DVDOverlayLibass.h"
 #include "cores/VideoPlayer/Interface/TimingConstants.h"
 #include "settings/SubtitlesSettings.h"
@@ -30,6 +31,8 @@ void CDebugRenderer::Initialize()
     return;
 
   m_adapter = new CSubtitlesAdapter();
+
+  KODI::DEBUGPROBE::LogOnce();
 
   m_isInitialized = m_adapter->Initialize();
   if (!m_isInitialized)
