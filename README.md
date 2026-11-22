@@ -49,6 +49,22 @@ This is [isarrider/xbmc](https://github.com/isarrider/xbmc), a fork of [xbmc/xbm
 | [#30573](https://github.com/xbmc/xbmc/pull/30573) | CPU usage per thread in the Player Debug Info | open |
 | [#30596](https://github.com/xbmc/xbmc/pull/30596) | CPU usage per core in the Player Debug Info, graphic in the top right | open, needs #30573 |
 
+### Debug probe results
+
+What the probe found Kodi is allowed to read, as a base for further debug lines:
+
+| Metric | Source | Pixel 8 Pro (Android 17, Tensor G3, Mali-G715) | Fire TV Stick 4K Max (Fire OS 7 / Android 9, MT8696, PowerVR GE9215) |
+|---|---|---|---|
+| GPU time per frame | `GL_EXT_disjoint_timer_query` | 🟢 supported | 🔴 not supported |
+| GPU load % | Mali / Adreno / MediaTek sysfs files | 🔴 permission denied | 🔴 no such files |
+| GPU clock | `/sys/class/misc/mali0/device/cur_freq` | 🟢 readable | 🔴 no such file |
+| CPU clock per core | `cpuN/cpufreq/scaling_cur_freq` | 🟢 all 9 cores | 🟢 all 4 cores |
+| CPU clock limit | `cpuN/cpufreq/scaling_max_freq` | 🟢 readable | 🔴 permission denied |
+| Thermal status and headroom | Android thermal API | 🟢 available | 🔴 needs Android 11 |
+| Temperatures per sensor | `/sys/class/thermal` | 🔴 permission denied | 🔴 permission denied |
+| devfreq / platform devices | `/sys/class/devfreq`, `/sys/devices/platform` | 🔴 permission denied | 🔴 permission denied |
+| Memory (Kodi and total) | `/proc/self/statm`, `/proc/meminfo` | 🟢 readable | 🟢 readable |
+
 ### Using the test builds
 
 1. **Get an APK.** Run the "Android build" workflow under Actions (branch `master`, `armeabi-v7a` for 32-bit devices such as the Fire TV Stick 4K Max, `arm64-v8a` for 64-bit phones) and download the APK from the finished run. Downloads need a GitHub login and expire after 90 days.
