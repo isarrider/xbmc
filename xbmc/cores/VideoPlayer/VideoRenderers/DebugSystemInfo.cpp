@@ -460,10 +460,6 @@ void CDebugSystemInfo::Draw(float scale)
     return bottom - static_cast<int>(
                         std::lround((bottom - rangeTop) * std::clamp(ms / rangeMs, 0.0f, 1.0f)));
   };
-  const std::string budget = StringUtils::Format("{:.0f}", m_budgetMs);
-  text(padding + px(LABEL_WIDTH) - textWidth(budget), toY(m_budgetMs, top) - textHeight / 2,
-       budget);
-
   // Newest sample at the right edge, interpolated between seconds like the CPU history
   const auto sampleX = [&](size_t index)
   {
@@ -512,6 +508,9 @@ void CDebugSystemInfo::Draw(float scale)
   }
 
   dashedLine(plotX, plotX + plotWidth, toY(m_budgetMs, top));
+  // The budget in ms above its line, at the left where the oldest samples are
+  const std::string budget = StringUtils::Format("{:.1f}", m_budgetMs);
+  text(plotX + font, toY(m_budgetMs, top) - textHeight - font, budget);
 
   // A red dot where the slowest frame of a second missed the budget, i.e. a frame was dropped
   const int dot = std::max(2, px(3.0f));
