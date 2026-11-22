@@ -62,6 +62,7 @@ void CDebugRenderer::Dispose()
 
   m_isInitialized = false;
   m_coreUsage.Reset();
+  m_systemInfo.Reset();
   m_overlayRenderer.Flush();
   m_overlay.reset();
   OVERLAY::MarkDirty();
@@ -101,6 +102,19 @@ void CDebugRenderer::SetInfo(DEBUG_INFO_PLAYER& info)
     }
   }
 
+  m_systemGraph = advancedSettings->m_videoDebugSystemGraph;
+  if (advancedSettings->m_videoDebugSystem || m_systemGraph)
+    m_systemInfo.Update();
+  if (advancedSettings->m_videoDebugSystem)
+  {
+    const std::string systemInfo = m_systemInfo.GetSummary();
+    if (!systemInfo.empty())
+    {
+      std::string system = "System: " + systemInfo;
+      m_adapter->AddSubtitle(system, 0., 5000000.);
+    }
+  }
+
   if (advancedSettings->m_videoDebugThreads)
   {
     const std::string& threadUsage =
@@ -123,6 +137,7 @@ void CDebugRenderer::SetInfo(DEBUG_INFO_VIDEO& video, DEBUG_INFO_RENDER& render)
     return;
 
   m_coreGraph = CDebugCoreUsage::Graph::OFF;
+  m_systemGraph = false;
 
   // FIXME: We currently force ASS_Event's and the current PTS
   // of rendering with fixed values to allow perpetual
@@ -144,9 +159,14 @@ void CDebugRenderer::Render(CRect& src, CRect& dst, CRect& view)
   if (!m_isInitialized)
     return;
 
-  if (m_coreGraph != CDebugCoreUsage::Graph::OFF &&
-      CServiceBroker::GetWinSystem()->GetGfxContext().IsFullScreenVideo())
-    m_coreUsage.Render(view, m_coreGraph);
+  if (CServiceBroker::GetWinSystem()->GetGfxContext().IsFullScreenVideo())
+  {
+    float top = view.y1;
+    if (m_coreGraph != CDebugCoreUsage::Graph::OFF)
+      top = m_coreUsage.Render(view, m_coreGraph);
+    if (m_systemGraph)
+      m_systemInfo.Render(view, top);
+  }
 
   m_overlayRenderer.SetVideoRect(src, dst, view);
   m_overlayRenderer.Render(0);

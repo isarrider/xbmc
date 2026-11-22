@@ -49,6 +49,7 @@
 #include "application/ApplicationVolumeHandling.h"
 #include "cores/AudioEngine/Engines/ActiveAE/ActiveAE.h"
 #include "cores/FFmpeg.h"
+#include "cores/VideoPlayer/VideoRenderers/DebugFrameTime.h"
 #include "cores/playercorefactory/PlayerCoreFactory.h"
 #include "dialogs/GUIDialogBusy.h"
 #include "dialogs/GUIDialogCache.h"
@@ -931,6 +932,7 @@ void CApplication::Render()
 
   if (!CServiceBroker::GetRenderSystem()->BeginRender())
     return;
+  KODI::DEBUG_FRAME_TIME::BeginFrame();
 
   // render gui layer
   const bool guiWillRender = appPower->GetRenderGUI() && !m_skipGuiRender;
@@ -979,6 +981,7 @@ void CApplication::Render()
       captureService->FrameComplete();
   }
 
+  KODI::DEBUG_FRAME_TIME::EndFrame();
   CServiceBroker::GetRenderSystem()->EndRender();
 
   // reset our info cache - we do this at the end of Render so that it is

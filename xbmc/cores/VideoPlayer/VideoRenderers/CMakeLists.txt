@@ -6,7 +6,9 @@ set(SOURCES BaseRenderer.cpp
             RenderFlags.cpp
             RenderManager.cpp
             DebugCoreUsage.cpp
+            DebugFrameTime.cpp
             DebugRenderer.cpp
+            DebugSystemInfo.cpp
             DebugThreadUsage.cpp)
 
 set(HEADERS BaseRenderer.h
@@ -19,7 +21,9 @@ set(HEADERS BaseRenderer.h
             RenderInfo.h
             RenderManager.h
             DebugCoreUsage.h
+            DebugFrameTime.h
             DebugRenderer.h
+            DebugSystemInfo.h
             DebugThreadUsage.h)
 
 if(CORE_SYSTEM_NAME STREQUAL windows OR CORE_SYSTEM_NAME STREQUAL windowsstore)
