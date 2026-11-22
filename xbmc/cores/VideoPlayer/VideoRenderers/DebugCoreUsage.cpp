@@ -198,6 +198,7 @@ float CDebugCoreUsage::Render(const CRect& view, Graph graph)
                         static_cast<float>(w) / static_cast<float>(m_texture->GetTextureWidth()),
                         static_cast<float>(h) / static_cast<float>(m_texture->GetTextureHeight()));
   CGUITexture::DrawQuad(rect, 0xFFFFFFFF, m_texture.get(), &texCoords, -1.0f);
+  m_scale = scale;
   return rect.y2;
 }
 
@@ -207,6 +208,7 @@ void CDebugCoreUsage::Reset()
   m_history = {};
   m_pixels = std::vector<uint32_t>();
   m_texture.reset();
+  m_scale = 0.0f;
   m_width = 0;
   m_height = 0;
 }

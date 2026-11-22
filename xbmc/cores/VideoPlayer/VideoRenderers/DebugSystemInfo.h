@@ -35,8 +35,9 @@ public:
   void Update();
   //! e.g. "CPU 1.33 / 2.37 GHz  RAM Kodi 350 MB, free 5.1 GB  Frame 3.2, max 7.9 of 16.7 ms"
   std::string GetSummary() const;
-  //! Draw the frame time history at the right edge, below top. Returns its bottom.
-  float Render(const CRect& view, float top);
+  //! Draw the frame time history at the right edge, below top, at most at maxScale (0 for no
+  //! limit) to line up with a graphic above it. Returns its bottom.
+  float Render(const CRect& view, float top, float maxScale);
   //! Free the samples, pixels and texture and stop timing frames, e.g. when the overlay is closed
   void Reset();
 

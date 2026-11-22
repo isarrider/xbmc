@@ -44,6 +44,8 @@ public:
   std::string GetSummary() const;
   //! Returns the bottom of the graphic, or view.y1 if none was drawn
   float Render(const CRect& view, Graph graph);
+  //! The scale of the last drawn graphic, 0 if none
+  float GetScale() const { return m_scale; }
   //! Free the samples, pixels and texture, e.g. when the overlay is closed
   void Reset();
 
@@ -57,6 +59,7 @@ private:
   bool m_changed{false};
 
   Graph m_drawnGraph{Graph::OFF};
+  float m_scale{0.0f};
   unsigned int m_width{0};
   unsigned int m_height{0};
   std::vector<uint32_t> m_pixels;
