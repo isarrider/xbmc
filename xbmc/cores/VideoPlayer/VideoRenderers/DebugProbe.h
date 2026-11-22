@@ -14,7 +14,8 @@ namespace KODI::DEBUGPROBE
  * \brief Log once which GPU, CPU clock, thermal and memory sources this device lets
  * Kodi read, to decide which of them the Player Debug Info could show.
  *
- * Call from the render thread, as it also queries the render system.
+ * Called at startup and when the Player Debug Info is first opened, whichever
+ * comes first. Needs the render system to be initialized.
  */
 void LogOnce();
 } // namespace KODI::DEBUGPROBE
