@@ -7,6 +7,7 @@ set(SOURCES BaseRenderer.cpp
             RenderManager.cpp
             DebugCoreUsage.cpp
             DebugFrameGraph.cpp
+            DebugProbe.cpp
             DebugRenderer.cpp
             DebugThreadUsage.cpp)
 
@@ -21,6 +22,7 @@ set(HEADERS BaseRenderer.h
             RenderManager.h
             DebugCoreUsage.h
             DebugFrameGraph.h
+            DebugProbe.h
             DebugRenderer.h
             DebugThreadUsage.h)
 
