@@ -149,10 +149,10 @@ std::string CDebugCoreUsage::GetSummary() const
   return summary + StringUtils::Format("(total {}%)", m_total);
 }
 
-void CDebugCoreUsage::Render(const CRect& view, Graph graph)
+float CDebugCoreUsage::Render(const CRect& view, Graph graph)
 {
   if (graph == Graph::OFF || m_history.empty() || view.IsEmpty())
-    return;
+    return view.y1;
 
   const float cores = static_cast<float>(m_history.size());
   const float width = graph == Graph::BARS ? 2 * PADDING + (cores + 1) * BAR_WIDTH +
@@ -166,7 +166,7 @@ void CDebugCoreUsage::Render(const CRect& view, Graph graph)
       std::min({std::max(view.Height() / 1080.0f, 0.5f), (view.Width() - 2 * MARGIN) / width,
                 (view.Height() - 2 * MARGIN) / height});
   if (scale <= 0.0f)
-    return;
+    return view.y1;
   const auto w = static_cast<unsigned int>(std::lround(width * scale));
   const auto h = static_cast<unsigned int>(std::lround(height * scale));
 
@@ -179,7 +179,7 @@ void CDebugCoreUsage::Render(const CRect& view, Graph graph)
     m_changed = true;
   }
   if (!m_texture)
-    return;
+    return view.y1;
 
   if (m_changed || graph != m_drawnGraph)
   {
@@ -198,6 +198,7 @@ void CDebugCoreUsage::Render(const CRect& view, Graph graph)
                         static_cast<float>(w) / static_cast<float>(m_texture->GetTextureWidth()),
                         static_cast<float>(h) / static_cast<float>(m_texture->GetTextureHeight()));
   CGUITexture::DrawQuad(rect, 0xFFFFFFFF, m_texture.get(), &texCoords, -1.0f);
+  return rect.y2;
 }
 
 void CDebugCoreUsage::Reset()

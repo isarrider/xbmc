@@ -66,6 +66,7 @@ void CDebugRenderer::Dispose()
   m_isInitialized = false;
   m_frameGraph.Reset();
   m_coreUsage.Reset();
+  m_systemInfo.Reset();
   m_overlayRenderer.Flush();
   m_overlay.reset();
   OVERLAY::MarkDirty();
@@ -117,6 +118,19 @@ void CDebugRenderer::SetInfo(DEBUG_INFO_PLAYER& info, const DEBUG_INFO_FRAMES& f
     }
   }
 
+  m_systemGraph = advancedSettings->m_videoDebugSystemGraph;
+  if (advancedSettings->m_videoDebugSystem || m_systemGraph)
+    m_systemInfo.Update();
+  if (advancedSettings->m_videoDebugSystem)
+  {
+    const std::string systemInfo = m_systemInfo.GetSummary();
+    if (!systemInfo.empty())
+    {
+      std::string system = "System: " + systemInfo;
+      m_adapter->AddSubtitle(system, 0., 5000000.);
+    }
+  }
+
   if (advancedSettings->m_videoDebugThreads)
   {
     const std::string& threadUsage =
@@ -140,6 +154,7 @@ void CDebugRenderer::SetInfo(DEBUG_INFO_VIDEO& video, DEBUG_INFO_RENDER& render)
 
   m_showFrameGraph = false;
   m_coreGraph = CDebugCoreUsage::Graph::OFF;
+  m_systemGraph = false;
 
   // FIXME: We currently force ASS_Event's and the current PTS
   // of rendering with fixed values to allow perpetual
@@ -165,8 +180,11 @@ void CDebugRenderer::Render(CRect& src, CRect& dst, CRect& view)
   {
     if (m_showFrameGraph)
       m_frameGraph.Render(view);
+    float top = view.y1;
     if (m_coreGraph != CDebugCoreUsage::Graph::OFF)
-      m_coreUsage.Render(view, m_coreGraph);
+      top = m_coreUsage.Render(view, m_coreGraph);
+    if (m_systemGraph)
+      m_systemInfo.Render(view, top);
   }
 
   m_overlayRenderer.SetVideoRect(src, dst, view);

@@ -290,6 +290,8 @@ void CAdvancedSettings::Initialize()
   m_videoDebugThreadsCount = 5;
   m_videoDebugThreadsCores = false;
   m_videoDebugThreadsGraph = 0;
+  m_videoDebugSystem = false;
+  m_videoDebugSystemGraph = false;
 
   m_videoDefaultLatency = 0.0;
   m_videoDefaultHdrExtraLatency = 0.0;
@@ -959,6 +961,15 @@ void CAdvancedSettings::ParseSettingsFile(const std::string &file)
         else if (StringUtils::EqualsNoCase(graph, "history"))
           m_videoDebugThreadsGraph = 2;
       }
+    }
+
+    const TiXmlElement* pDebugSystem = pElement->FirstChildElement("playerdebugsystem");
+    if (pDebugSystem)
+    {
+      XMLUtils::GetBoolean(pDebugSystem, "enabled", m_videoDebugSystem);
+      std::string graph;
+      if (XMLUtils::GetString(pDebugSystem, "graph", graph))
+        m_videoDebugSystemGraph = StringUtils::EqualsNoCase(graph, "history");
     }
 
     // Store global display latency settings

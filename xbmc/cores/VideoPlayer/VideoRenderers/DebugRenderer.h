@@ -11,6 +11,7 @@
 #include "DebugCoreUsage.h"
 #include "DebugFrameGraph.h"
 #include "DebugInfo.h"
+#include "DebugSystemInfo.h"
 #include "DebugThreadUsage.h"
 #include "OverlayRenderer.h"
 #include "cores/VideoPlayer/DVDCodecs/Overlay/DVDOverlay.h"
@@ -53,6 +54,8 @@ protected:
   CDebugThreadUsage m_threadUsage;
   CDebugCoreUsage m_coreUsage;
   CDebugCoreUsage::Graph m_coreGraph{CDebugCoreUsage::Graph::OFF};
+  CDebugSystemInfo m_systemInfo;
+  bool m_systemGraph{false};
   bool m_showFrameGraph{false};
 
 private:

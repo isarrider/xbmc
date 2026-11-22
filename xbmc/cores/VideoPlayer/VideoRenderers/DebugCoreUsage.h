@@ -42,7 +42,8 @@ public:
   void Update();
   //! e.g. "#0 78%  #1 64%  (total 71%)", empty if not available
   std::string GetSummary() const;
-  void Render(const CRect& view, Graph graph);
+  //! Returns the bottom of the graphic, or view.y1 if none was drawn
+  float Render(const CRect& view, Graph graph);
   //! Free the samples, pixels and texture, e.g. when the overlay is closed
   void Reset();
 
