@@ -1,4 +1,4 @@
-From d20eaa0cbc8fa279cc513d62cd2f93d6a4e47567 Mon Sep 17 00:00:00 2001
+From 481e3a995414aa61e19f7f8808e55c2b9984f799 Mon Sep 17 00:00:00 2001
 From: Alex <6953309+isarrider@users.noreply.github.com>
 Date: Sun, 25 Oct 2026 14:33:45 +0100
 Subject: [PATCH 1/4] avcodec/vc1dec: add frame threading support
@@ -572,7 +572,8 @@ index a4d465d..729088c 100644
 -- 
 2.43.0
 
-From 4db3a2e89c6e75d691e590399fa2c575e2fbc597 Mon Sep 17 00:00:00 2001
+
+From c482de12c442c6ecb1b082990c36125d66873ca7 Mon Sep 17 00:00:00 2001
 From: Alex <6953309+isarrider@users.noreply.github.com>
 Date: Sun, 25 Oct 2026 15:46:41 +0100
 Subject: [PATCH 2/4] avcodec/vc1dec: finish frame thread setup early for field
@@ -798,7 +799,8 @@ index 729088c..8548e8a 100644
 -- 
 2.43.0
 
-From fb0809ccc4ab8975c7d89c202d738a9147327773 Mon Sep 17 00:00:00 2001
+
+From 6511bba0978f000c8d564237dbf7ac52efc942c5 Mon Sep 17 00:00:00 2001
 From: Alex <6953309+isarrider@users.noreply.github.com>
 Date: Thu, 12 Nov 2026 11:11:23 +0100
 Subject: [PATCH 3/4] avcodec/vc1dec: let field I/P pictures overlap with frame
@@ -1258,7 +1260,8 @@ index 8548e8a..c34ff37 100644
 -- 
 2.43.0
 
-From ee2069bb51fdf90b5b80d08659f67b88b32fe482 Mon Sep 17 00:00:00 2001
+
+From 62ba44364407c30e05e3fa5302bc46ed7831a7c4 Mon Sep 17 00:00:00 2001
 From: Alex <6953309+isarrider@users.noreply.github.com>
 Date: Thu, 12 Nov 2026 11:26:39 +0100
 Subject: [PATCH 4/4] avcodec/vc1: document frame threading with diagrams
