@@ -218,6 +218,7 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
     int m_videoDebugGraphHeight; //!< percent of the video height
     int m_videoDebugGraphAudio; //!< 0 off, 1 overlay, 2 band
     float m_gamesPacingMarginMs;
+    float m_minTempo;
     float m_maxTempo;
     bool m_videoPreferStereoStream = false;
 
@@ -251,7 +252,6 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
     bool m_autoMountOpticalMedia{true};
 
     bool m_fullScreenOnMovieStart;
-    std::string m_cachePath;
     std::string m_videoCleanDateTimeRegExp;
     std::string m_videoFilenameAttributePairsRegExp;
     std::vector<std::string> m_videoCleanStringRegExps;
