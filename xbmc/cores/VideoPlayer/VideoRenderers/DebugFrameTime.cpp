@@ -107,15 +107,15 @@ struct GpuTimer
       GLuint ns = 0;
       getQueryObjectuiv(queries[i], QUERY_RESULT, &ns);
       pending[i] = false;
-      // A disjoint event, e.g. a clock change, makes the results in flight meaningless
-      if (!disjoint)
-      {
-        sumMs += ns / 1e6;
-        ++count;
-        ++totalResults;
-      }
-      else
+      // Mali reports a disjoint event for nearly every frame, probably for its clock changes, so
+      // results are only dropped if they can't be a frame's time
+      if (disjoint)
         ++totalDisjoint;
+      if (ns > 1000000000)
+        continue;
+      sumMs += ns / 1e6;
+      ++count;
+      ++totalResults;
     }
   }
 
@@ -153,7 +153,7 @@ struct GpuTimer
   {
     if (created)
       CLog::Log(LOGINFO,
-                "DebugFrameTime: GPU timer: {} results, {} discarded as disjoint, {} frames "
+                "DebugFrameTime: GPU timer: {} results, {} with a disjoint event, {} frames "
                 "skipped while the GPU was behind",
                 totalResults, totalDisjoint, totalSkipped);
     totalResults = 0;
