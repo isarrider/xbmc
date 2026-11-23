@@ -105,9 +105,9 @@ void CDebugRenderer::SetInfo(DEBUG_INFO_PLAYER& info, const DEBUG_INFO_FRAMES& f
   // without use all these fixed values.
   m_adapter->FlushSubtitles();
 
-  // Every line under the name <playerdebuginfo><lines> uses for it, in the default order. A line
-  // that is switched off or has nothing to show stays empty and is left out, except the player's
-  // own lines, which are always shown.
+  // Every line in the order of the playerdebug.lines options. A line that is switched off or has
+  // nothing to show stays empty and is left out, except the player's own lines, which are always
+  // shown.
   struct Line
   {
     std::string_view name;
@@ -173,19 +173,10 @@ void CDebugRenderer::SetInfo(DEBUG_INFO_PLAYER& info, const DEBUG_INFO_FRAMES& f
       m_adapter->AddSubtitle(line.text, 0., 5000000.);
   };
   std::vector<Line*> shown;
-  if (advancedSettings->m_videoDebugLines.empty())
+  for (size_t i = 0; i < lines.size(); ++i)
   {
-    for (Line& line : lines)
-      shown.push_back(&line);
-  }
-  else
-  {
-    for (const std::string& name : advancedSettings->m_videoDebugLines)
-    {
-      const auto line = std::ranges::find(lines, name, &Line::name);
-      if (line != lines.end())
-        shown.push_back(&*line);
-    }
+    if (advancedSettings->m_videoDebugLines & (1u << i))
+      shown.push_back(&lines[i]);
   }
   // Libass stacks bottom aligned lines upwards, so add them last to first to keep the order
   if (advancedSettings->m_videoDebugTextPosition >= 2)

@@ -25,6 +25,7 @@
 #include <vector>
 
 class CProfileManager;
+class CSettings;
 class CSettingsManager;
 class CVariant;
 struct IntegerSettingOption;
@@ -208,8 +209,8 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
     bool m_videoDebugSystem;
     bool m_videoDebugFrames;
     bool m_videoDebugSystemGraph;
-    //! Names of the Player Debug Info lines in the order shown, empty for all in the default order
-    std::vector<std::string> m_videoDebugLines;
+    //! Player Debug Info lines to show, one bit per line in their default order
+    unsigned int m_videoDebugLines;
     int m_videoDebugTextSize; //!< in %
     int m_videoDebugTextBackdrop; //!< opacity in %, 0 for none
     int m_videoDebugTextPosition; //!< 0 top left, 1 top right, 2 bottom left, 3 bottom right
@@ -458,6 +459,8 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
     uint32_t m_nfsMaxConnections; // per export
 
   private:
+    //! The Player Debug Info options from Settings > Services > Player debug
+    void LoadPlayerDebugSettings(const CSettings& settings);
     void Initialize();
     void Clear();
     void SetExtraArtwork(const TiXmlElement* arttypes, std::vector<std::string>& artworkMap) const;

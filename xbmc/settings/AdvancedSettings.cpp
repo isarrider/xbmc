@@ -26,6 +26,7 @@
 #include "utils/Set.h"
 #include "utils/StringUtils.h"
 #include "utils/SystemInfo.h"
+#include "utils/Variant.h"
 #include "utils/XMLUtils.h"
 #include "utils/log.h"
 
@@ -42,6 +43,7 @@ using namespace ADDON;
 
 namespace
 {
+constexpr const char* SETTING_PLAYERDEBUG_LINES = "playerdebug.lines";
 
 /*!
  * \brief Take the languages declared in a <languagecodes> block into the language table.
@@ -171,11 +173,45 @@ void CAdvancedSettings::OnSettingsLoaded()
   }
   CServiceBroker::GetLogging().SetLogLevel(m_logLevel);
 
+  LoadPlayerDebugSettings(*settings);
+
   {
     std::lock_guard lock{m_listCritSection};
     for (const auto& [handle, callback] : m_settingsLoadedCallbacks)
       callback();
   }
+}
+
+void CAdvancedSettings::LoadPlayerDebugSettings(const CSettings& settings)
+{
+  m_videoDebugLines = 0;
+  for (const CVariant& line : settings.GetList(SETTING_PLAYERDEBUG_LINES))
+  {
+    if (line.asInteger() >= 0 && line.asInteger() < 32)
+      m_videoDebugLines |= 1u << line.asInteger();
+  }
+
+  m_videoDebugTextSize = settings.GetInt("playerdebug.textsize");
+  m_videoDebugTextBackdrop = settings.GetInt("playerdebug.textbackdrop");
+  m_videoDebugTextPosition = settings.GetInt("playerdebug.textposition");
+  m_videoDebugGraphicsSize = settings.GetInt("playerdebug.graphicssize");
+  m_videoDebugGraphicsPosition = settings.GetInt("playerdebug.graphicsposition");
+
+  m_videoDebugThreads = settings.GetBool("playerdebug.threads");
+  m_videoDebugThreadsCount = settings.GetInt("playerdebug.threadcount");
+  m_videoDebugThreadsCores = settings.GetBool("playerdebug.cores");
+  m_videoDebugThreadsGraph = settings.GetInt("playerdebug.cpugraph");
+
+  m_videoDebugSystem = settings.GetBool("playerdebug.system");
+  m_videoDebugFrames = settings.GetBool("playerdebug.frames");
+  m_videoDebugSystemGraph = settings.GetBool("playerdebug.frametimegraph");
+
+  m_videoDebugGraph = settings.GetBool("playerdebug.framesizegraph");
+  m_videoDebugGraphLogScale = settings.GetInt("playerdebug.framesizescale") == 0;
+  m_videoDebugGraphSweep = settings.GetInt("playerdebug.framesizemode") == 0;
+  m_videoDebugGraphHeight = settings.GetInt("playerdebug.framesizeheight");
+  m_videoDebugGraphFrameTypes = settings.GetBool("playerdebug.framesizetypes");
+  m_videoDebugGraphAudio = settings.GetInt("playerdebug.framesizeaudio");
 }
 
 void CAdvancedSettings::OnSettingsUnloaded()
@@ -191,6 +227,8 @@ void CAdvancedSettings::OnSettingChanged(const std::shared_ptr<const CSetting>& 
   const std::string &settingId = setting->GetId();
   if (settingId == CSettings::SETTING_DEBUG_SHOWLOGINFO)
     SetDebugMode(std::static_pointer_cast<const CSettingBool>(setting)->GetValue());
+  else if (StringUtils::StartsWith(settingId, "playerdebug."))
+    LoadPlayerDebugSettings(*CServiceBroker::GetSettingsComponent()->GetSettings());
 }
 
 int CAdvancedSettings::RegisterSettingsLoadedCallback(AdvancedSettingsCallback callback)
@@ -232,7 +270,26 @@ void CAdvancedSettings::Initialize(CSettingsManager& settingsMgr)
     m_handleMounting = true;
 
   settingsMgr.RegisterSettingsHandler(this, true);
-  settingsMgr.RegisterCallback(this, {CSettings::SETTING_DEBUG_SHOWLOGINFO});
+  settingsMgr.RegisterCallback(this, {CSettings::SETTING_DEBUG_SHOWLOGINFO,
+                                      SETTING_PLAYERDEBUG_LINES,
+                                      "playerdebug.textsize",
+                                      "playerdebug.textbackdrop",
+                                      "playerdebug.textposition",
+                                      "playerdebug.graphicssize",
+                                      "playerdebug.graphicsposition",
+                                      "playerdebug.threads",
+                                      "playerdebug.threadcount",
+                                      "playerdebug.cores",
+                                      "playerdebug.cpugraph",
+                                      "playerdebug.system",
+                                      "playerdebug.frames",
+                                      "playerdebug.frametimegraph",
+                                      "playerdebug.framesizegraph",
+                                      "playerdebug.framesizescale",
+                                      "playerdebug.framesizemode",
+                                      "playerdebug.framesizeheight",
+                                      "playerdebug.framesizetypes",
+                                      "playerdebug.framesizeaudio"});
 }
 
 void CAdvancedSettings::Uninitialize(CSettingsManager& settingsMgr)
@@ -318,7 +375,7 @@ void CAdvancedSettings::Initialize()
   m_videoDebugSystem = false;
   m_videoDebugFrames = false;
   m_videoDebugSystemGraph = false;
-  m_videoDebugLines.clear();
+  m_videoDebugLines = ~0u;
   m_videoDebugTextSize = 100;
   m_videoDebugTextBackdrop = 0;
   m_videoDebugTextPosition = 0;
@@ -948,111 +1005,6 @@ void CAdvancedSettings::ParseSettingsFile(const std::string &file)
     XMLUtils::GetFloat(pElement, "mintempo", m_minTempo, 0.5, 0.8);
     XMLUtils::GetFloat(pElement, "maxtempo", m_maxTempo, 1.5, 2.0);
     XMLUtils::GetBoolean(pElement, "preferstereostream", m_videoPreferStereoStream);
-
-    const TiXmlElement* pDebugGraph = pElement->FirstChildElement("playerdebugframegraph");
-    if (pDebugGraph)
-    {
-      XMLUtils::GetBoolean(pDebugGraph, "enabled", m_videoDebugGraph);
-      std::string value;
-      if (XMLUtils::GetString(pDebugGraph, "scale", value))
-      {
-        if (StringUtils::EqualsNoCase(value, "lin") || StringUtils::EqualsNoCase(value, "linear"))
-          m_videoDebugGraphLogScale = false;
-        else if (StringUtils::EqualsNoCase(value, "log") ||
-                 StringUtils::EqualsNoCase(value, "logarithmic"))
-          m_videoDebugGraphLogScale = true;
-      }
-      if (XMLUtils::GetString(pDebugGraph, "mode", value))
-        m_videoDebugGraphSweep = !StringUtils::EqualsNoCase(value, "scroll");
-      XMLUtils::GetBoolean(pDebugGraph, "frametypes", m_videoDebugGraphFrameTypes);
-      XMLUtils::GetInt(pDebugGraph, "height", m_videoDebugGraphHeight, 10, 90);
-      if (XMLUtils::GetString(pDebugGraph, "audio", value))
-      {
-        if (StringUtils::EqualsNoCase(value, "off"))
-          m_videoDebugGraphAudio = 0;
-        else if (StringUtils::EqualsNoCase(value, "overlay"))
-          m_videoDebugGraphAudio = 1;
-        else if (StringUtils::EqualsNoCase(value, "band"))
-          m_videoDebugGraphAudio = 2;
-      }
-    }
-
-    const TiXmlElement* pDebugCpu = pElement->FirstChildElement("playerdebugcpu");
-    if (pDebugCpu)
-    {
-      XMLUtils::GetBoolean(pDebugCpu, "threads", m_videoDebugThreads);
-      XMLUtils::GetInt(pDebugCpu, "count", m_videoDebugThreadsCount, 1, 10);
-      XMLUtils::GetBoolean(pDebugCpu, "cores", m_videoDebugThreadsCores);
-      std::string graph;
-      if (XMLUtils::GetString(pDebugCpu, "graph", graph))
-      {
-        if (StringUtils::EqualsNoCase(graph, "off"))
-          m_videoDebugThreadsGraph = 0;
-        else if (StringUtils::EqualsNoCase(graph, "bars"))
-          m_videoDebugThreadsGraph = 1;
-        else if (StringUtils::EqualsNoCase(graph, "history"))
-          m_videoDebugThreadsGraph = 2;
-      }
-    }
-
-    const TiXmlElement* pDebugSystem = pElement->FirstChildElement("playerdebugsystem");
-    if (pDebugSystem)
-    {
-      XMLUtils::GetBoolean(pDebugSystem, "system", m_videoDebugSystem);
-      XMLUtils::GetBoolean(pDebugSystem, "frames", m_videoDebugFrames);
-      std::string graph;
-      if (XMLUtils::GetString(pDebugSystem, "graph", graph))
-        m_videoDebugSystemGraph = StringUtils::EqualsNoCase(graph, "history");
-    }
-
-    const TiXmlElement* pDebugInfo = pElement->FirstChildElement("playerdebuginfo");
-    std::string lines;
-    if (pDebugInfo && XMLUtils::GetString(pDebugInfo, "lines", lines))
-    {
-      static constexpr std::array<std::string_view, 10> knownLines = {
-          "audio",  "video",  "player",  "framesizes", "cores",
-          "system", "frames", "threads", "vsync",      "geometry"};
-      m_videoDebugLines.clear();
-      for (std::string line : StringUtils::Split(lines, std::vector<std::string>{",", " "}))
-      {
-        StringUtils::Trim(line);
-        StringUtils::ToLower(line);
-        if (line.empty())
-          continue;
-        if (std::ranges::find(knownLines, line) == knownLines.end())
-          CLog::Log(LOGWARNING, "playerdebuginfo: unknown line \"{}\"", line);
-        else
-          m_videoDebugLines.push_back(line);
-      }
-    }
-    if (pDebugInfo)
-    {
-      const auto corner = [](const TiXmlElement* element, int& value)
-      {
-        static constexpr std::array<std::string_view, 4> corners = {"topleft", "topright",
-                                                                    "bottomleft", "bottomright"};
-        std::string position;
-        if (!XMLUtils::GetString(element, "position", position))
-          return;
-        StringUtils::ToLower(position);
-        const auto it = std::ranges::find(corners, position);
-        if (it != corners.end())
-          value = static_cast<int>(it - corners.begin());
-        else
-          CLog::Log(LOGWARNING, "playerdebuginfo: unknown position \"{}\"", position);
-      };
-      if (const TiXmlElement* text = pDebugInfo->FirstChildElement("text"))
-      {
-        XMLUtils::GetInt(text, "size", m_videoDebugTextSize, 50, 200);
-        XMLUtils::GetInt(text, "backdrop", m_videoDebugTextBackdrop, 0, 100);
-        corner(text, m_videoDebugTextPosition);
-      }
-      if (const TiXmlElement* graphics = pDebugInfo->FirstChildElement("graphics"))
-      {
-        XMLUtils::GetInt(graphics, "size", m_videoDebugGraphicsSize, 50, 200);
-        corner(graphics, m_videoDebugGraphicsPosition);
-      }
-    }
 
     // Store global display latency settings
     const TiXmlElement* pVideoLatency = pElement->FirstChildElement("latency");

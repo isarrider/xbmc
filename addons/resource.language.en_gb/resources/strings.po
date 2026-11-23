@@ -25469,6 +25469,336 @@ msgstr ""
 
 #empty strings from id 39222 to 39899
 
+#: system/settings/settings.xml
+msgctxt "#39700"
+msgid "Player debug"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39701"
+msgid "What the Player Debug Info shows and how. It is opened with Ctrl+Shift+O or the PlayerDebug action during playback."
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39702"
+msgid "Display"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39703"
+msgid "CPU"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39704"
+msgid "System and frames"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39705"
+msgid "Frame size graph"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39710"
+msgid "Lines"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39711"
+msgid "Which lines the Player Debug Info shows. A line whose feature is switched off below stays hidden."
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39712"
+msgid "Audio"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39713"
+msgid "Video"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39714"
+msgid "Player"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39715"
+msgid "Frame sizes"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39716"
+msgid "Cores"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39717"
+msgid "System"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39718"
+msgid "Frames"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39719"
+msgid "Threads"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39720"
+msgid "VSync"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39721"
+msgid "Content geometry"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39722"
+msgid "Text size"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39723"
+msgid "Size of the debug text."
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39724"
+msgid "Text background"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39725"
+msgid "Opacity of a dark box behind each line, for reading the text on bright video."
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39726"
+msgid "Text position"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39727"
+msgid "Corner of the debug text. At the bottom it lies over the frame size graph."
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39728"
+msgid "Top left"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39729"
+msgid "Top right"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39730"
+msgid "Bottom left"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39731"
+msgid "Bottom right"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39732"
+msgid "Graphics size"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39733"
+msgid "Size of the CPU and frame time graphics."
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39734"
+msgid "Graphics position"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39735"
+msgid "Corner of the CPU and frame time graphics. In the text's corner they move to the other side."
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39736"
+msgid "Threads line"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39737"
+msgid "Show the threads that use the most CPU time."
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39738"
+msgid "Number of threads"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39739"
+msgid "How many threads the Threads line lists."
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39740"
+msgid "Cores line"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39741"
+msgid "Show the usage of each CPU core."
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39742"
+msgid "CPU graphic"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39743"
+msgid "Graphic of the CPU usage per core: the current usage as bars, or the last minute as a history."
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39745"
+msgid "Bars"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39746"
+msgid "History"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39747"
+msgid "System line"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39748"
+msgid "Show the CPU clocks, memory and, from Android 11, the thermal state."
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39749"
+msgid "Frames line"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39750"
+msgid "Show the time Kodi needs per frame against the refresh budget and, where the device can measure it, the GPU time."
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39751"
+msgid "Frame time graphic"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39752"
+msgid "Graphic of the frame times over the last minute, below the CPU graphic."
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39753"
+msgid "Frame size graph"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39754"
+msgid "Show every video frame's size along the bottom of the screen."
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39755"
+msgid "Scale"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39756"
+msgid "Logarithmic shows small and large frames alike, linear shows the differences between large frames."
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39757"
+msgid "Logarithmic"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39758"
+msgid "Linear"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39759"
+msgid "Mode"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39760"
+msgid "Sweep writes new frames at a moving cursor, scroll moves the graph left."
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39761"
+msgid "Sweep"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39762"
+msgid "Scroll"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39763"
+msgid "Height"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39764"
+msgid "Height of the frame size graph in percent of the video height."
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39765"
+msgid "Frame types"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39766"
+msgid "Colour I, P and B frames. Parses every frame while the graph is shown."
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39767"
+msgid "Audio bitrate"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39768"
+msgid "Show the audio bitrate as a line over the frames or in a strip of its own."
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39770"
+msgid "Overlay"
+msgstr ""
+
+#: system/settings/settings.xml
+msgctxt "#39771"
+msgid "Band"
+msgstr ""
+
 #. List formatting: pattern used to join a list of exactly two items, e.g. "A and B"
 #. STR_LIST_AND_TWO
 #: xbmc/language/i18n/ListFormatter.h
