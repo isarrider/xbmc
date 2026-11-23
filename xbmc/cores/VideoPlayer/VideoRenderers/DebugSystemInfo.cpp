@@ -48,6 +48,7 @@ constexpr uint32_t COLOR_MEDIUM = 0xFFFFB547;
 constexpr uint32_t COLOR_HIGH = 0xFFE5484D;
 constexpr uint32_t COLOR_LINE = 0xE6FFFFFF;
 constexpr uint32_t COLOR_GPU = 0xFF3F8CFF;
+constexpr uint32_t COLOR_MAX = 0x30FFFFFF;
 
 // ASS override colours (&HBBGGRR&) of the same green, amber and red
 constexpr std::string_view ASS_LOW = "{\\c&H84DC3D&}";
@@ -58,8 +59,10 @@ constexpr std::string_view ASS_RESET = "{\\c}";
 // Sizes for a 1080 pixel high screen
 constexpr float MARGIN = 8.0f;
 constexpr float PADDING = 12.0f;
+// Laid out like the CPU cores history above it, two rows high
 constexpr float PLOT_WIDTH = 300.0f;
-constexpr float PLOT_HEIGHT = 120.0f;
+constexpr float PLOT_HEIGHT = 96.0f;
+constexpr float TOTAL_WIDTH = 30.0f;
 
 //! 5x7 pixel digits and '.', one row per entry, bit 4 is the left column
 constexpr std::string_view GLYPH_CHARS = "0123456789.";
@@ -79,7 +82,7 @@ constexpr std::array<std::array<uint8_t, GLYPH_HEIGHT>, 11> GLYPHS = {{
     {0x00, 0x00, 0x00, 0x00, 0x00, 0x0C, 0x0C},
 }};
 constexpr float FONT = 2.0f;
-constexpr float LABEL_WIDTH = 4 * (GLYPH_WIDTH + 1) * FONT;
+constexpr float LABEL_WIDTH = 3 * (GLYPH_WIDTH + 1) * FONT;
 
 uint32_t Blend(uint32_t dst, uint32_t src)
 {
@@ -330,16 +333,16 @@ std::string CDebugSystemInfo::GetSummary() const
   return summary;
 }
 
-float CDebugSystemInfo::Render(const CRect& view, float top)
+float CDebugSystemInfo::Render(const CRect& view, float top, float maxScale)
 {
   if (m_history.empty() || m_budgetMs <= 0.0f || view.IsEmpty())
     return top;
 
-  const float width = 3 * PADDING + LABEL_WIDTH + PLOT_WIDTH;
+  const float width = 4 * PADDING + LABEL_WIDTH + PLOT_WIDTH + TOTAL_WIDTH;
   const float height = 2 * PADDING + PLOT_HEIGHT;
   const float scale =
-      std::min({std::max(view.Height() / 1080.0f, 0.5f), (view.Width() - 2 * MARGIN) / width,
-                (view.y2 - top - 2 * MARGIN) / height});
+      std::min({maxScale > 0.0f ? maxScale : std::max(view.Height() / 1080.0f, 0.5f),
+                (view.Width() - 2 * MARGIN) / width, (view.y2 - top - 2 * MARGIN) / height});
   if (scale <= 0.0f)
     return top;
   const auto w = static_cast<unsigned int>(std::lround(width * scale));
@@ -432,33 +435,47 @@ void CDebugSystemInfo::Draw(float scale)
       fill(x, y, std::min(x + dash, x2), y + thickness, COLOR_LINE);
   };
 
+  const auto outline = [&](int x1, int y1, int x2, int y2)
+  {
+    const int t = std::max(1, px(2.0f));
+    fill(x1, y1, x2, y1 + t, COLOR_TEXT);
+    fill(x1, y2 - t, x2, y2, COLOR_TEXT);
+    fill(x1, y1, x1 + t, y2, COLOR_TEXT);
+    fill(x2 - t, y1, x2, y2, COLOR_TEXT);
+  };
+
   const int padding = px(PADDING);
+  const int textHeight = GLYPH_HEIGHT * font;
   const int plotX = padding + px(LABEL_WIDTH) + padding;
-  const int plotWidth = w - plotX - padding;
+  const int totalWidth = px(TOTAL_WIDTH);
+  const int plotWidth = w - plotX - padding - totalWidth - padding;
   const int top = padding;
   const int bottom = h - padding;
   fill(plotX, top, plotX + plotWidth, bottom, COLOR_TRACK);
 
   // The scale ends at twice the frame budget, so the budget is in the middle
   const float rangeMs = 2 * m_budgetMs;
-  const auto toY = [&](float ms)
+  const auto toY = [&](float ms, int rangeTop)
   {
-    return bottom -
-           static_cast<int>(std::lround((bottom - top) * std::clamp(ms / rangeMs, 0.0f, 1.0f)));
+    return bottom - static_cast<int>(
+                        std::lround((bottom - rangeTop) * std::clamp(ms / rangeMs, 0.0f, 1.0f)));
   };
-  const int textHeight = GLYPH_HEIGHT * font;
-  const auto label = [&](float ms)
+  // Newest sample at the right edge, interpolated between seconds like the CPU history
+  const auto sampleX = [&](size_t index)
   {
-    const std::string value = StringUtils::Format("{:.1f}", ms);
-    text(plotX - padding / 2 - textWidth(value),
-         std::clamp(toY(ms) - textHeight / 2, 0, h - textHeight), value);
+    return static_cast<int>(
+        std::lround(static_cast<float>(index + HISTORY_SAMPLES - m_history.size()) *
+                    (plotWidth - 1) / static_cast<float>(HISTORY_SAMPLES - 1)));
   };
-  label(0.0f);
-  label(m_budgetMs);
-  label(rangeMs);
-
-  // Newest sample at the right edge: the maximum as bars, the average as a filled area and
-  // the GPU time as a line
+  const auto at = [&](float position, float Sample::*value)
+  {
+    const auto index = std::min(static_cast<size_t>(position), m_history.size() - 1);
+    const float fraction = position - static_cast<float>(index);
+    const float from = m_history[index].*value;
+    return index + 1 < m_history.size() ? from + (m_history[index + 1].*value - from) * fraction
+                                        : from;
+  };
+  int prevY = -1;
   int prevGpuY = -1;
   for (int x = 0; x < plotWidth; ++x)
   {
@@ -467,22 +484,54 @@ void CDebugSystemInfo::Draw(float scale)
                            static_cast<float>(HISTORY_SAMPLES - m_history.size());
     if (position < 0.0f)
       continue;
-    const auto& sample =
-        m_history[std::min(static_cast<size_t>(std::lround(position)), m_history.size() - 1)];
-    const uint32_t maxColor = BudgetColor(sample.maxMs, m_budgetMs);
-    fill(plotX + x, toY(sample.maxMs), plotX + x + 1, bottom, (maxColor & 0x00FFFFFF) | 0x50000000);
-    fill(plotX + x, toY(sample.averageMs), plotX + x + 1, bottom,
-         BudgetColor(sample.averageMs, m_budgetMs));
-    if (sample.gpuMs >= 0.0f)
+    const float average = at(position, &Sample::averageMs);
+    const int y = toY(average, top);
+    const uint32_t color = BudgetColor(average, m_budgetMs);
+    // The slowest frame of each second as a light band above the average
+    fill(plotX + x, toY(at(position, &Sample::maxMs), top), plotX + x + 1, y, COLOR_MAX);
+    fill(plotX + x, y, plotX + x + 1, bottom, (COLOR_LOW & 0x00FFFFFF) | 0x5A000000);
+    const int fromY = prevY < 0 ? y : prevY;
+    fill(plotX + x, std::min(fromY, y), plotX + x + 1, std::max(fromY, y) + px(2.0f), color);
+    prevY = y;
+
+    const float gpu = at(position, &Sample::gpuMs);
+    if (gpu >= 0.0f)
     {
-      const int y = toY(sample.gpuMs);
-      const int fromY = prevGpuY < 0 ? y : prevGpuY;
-      fill(plotX + x, std::min(fromY, y), plotX + x + 1, std::max(fromY, y) + px(2.0f), COLOR_GPU);
-      prevGpuY = y;
+      const int gpuY = toY(gpu, top);
+      const int fromGpuY = prevGpuY < 0 ? gpuY : prevGpuY;
+      fill(plotX + x, std::min(fromGpuY, gpuY), plotX + x + 1, std::max(fromGpuY, gpuY) + px(2.0f),
+           COLOR_GPU);
+      prevGpuY = gpuY;
     }
     else
       prevGpuY = -1;
   }
 
-  dashedLine(plotX, plotX + plotWidth, toY(m_budgetMs));
+  dashedLine(plotX, plotX + plotWidth, toY(m_budgetMs, top));
+  // The budget in ms above its line, at the left where the oldest samples are
+  const std::string budget = StringUtils::Format("{:.1f}", m_budgetMs);
+  text(plotX + font, toY(m_budgetMs, top) - textHeight - font, budget);
+
+  // A red dot where the slowest frame of a second missed the budget, i.e. a frame was dropped
+  const int dot = std::max(2, px(3.0f));
+  for (size_t i = 0; i < m_history.size(); ++i)
+  {
+    if (m_history[i].maxMs <= m_budgetMs)
+      continue;
+    const int x = plotX + sampleX(i);
+    const int y = toY(m_history[i].maxMs, top);
+    fill(x - dot, y - dot, x + dot, y + dot, COLOR_HIGH);
+  }
+
+  // The last second's average in a bar like the CPU total
+  const int x = plotX + plotWidth + padding;
+  const int barTop = padding + textHeight + font;
+  const float current = m_history.back().averageMs;
+  const int currentTop = toY(current, barTop);
+  fill(x, barTop, x + totalWidth, bottom, COLOR_TRACK);
+  fill(x, currentTop, x + totalWidth, bottom, BudgetColor(current, m_budgetMs));
+  outline(x, currentTop, x + totalWidth, bottom);
+  const std::string value = StringUtils::Format("{:.0f}", current);
+  text(x + (totalWidth - textWidth(value)) / 2,
+       std::max(currentTop - textHeight - font, padding / 2), value);
 }

@@ -181,10 +181,14 @@ void CDebugRenderer::Render(CRect& src, CRect& dst, CRect& view)
     if (m_showFrameGraph)
       m_frameGraph.Render(view);
     float top = view.y1;
+    float scale = 0.0f;
     if (m_coreGraph != CDebugCoreUsage::Graph::OFF)
+    {
       top = m_coreUsage.Render(view, m_coreGraph);
+      scale = m_coreUsage.GetScale();
+    }
     if (m_systemGraph)
-      m_systemInfo.Render(view, top);
+      m_systemInfo.Render(view, top, scale);
   }
 
   m_overlayRenderer.SetVideoRect(src, dst, view);
