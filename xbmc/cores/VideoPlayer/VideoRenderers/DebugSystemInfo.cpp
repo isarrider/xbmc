@@ -530,8 +530,9 @@ void CDebugSystemInfo::Draw(float scale)
   {
     if (m_history[i].maxMs <= m_budgetMs)
       continue;
-    const int x = plotX + sampleX(i);
-    const int y = toY(m_history[i].maxMs, top);
+    // Kept inside the plot, also for frames beyond the top of the scale
+    const int x = std::clamp(plotX + sampleX(i), plotX + dot, plotX + plotWidth - dot);
+    const int y = std::clamp(toY(m_history[i].maxMs, top), top + dot, bottom - dot);
     fill(x - dot, y - dot, x + dot, y + dot, COLOR_HIGH);
   }
 
