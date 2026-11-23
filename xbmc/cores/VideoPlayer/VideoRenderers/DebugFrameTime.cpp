@@ -190,7 +190,7 @@ void KODI::DEBUG_FRAME_TIME::EndFrame()
       std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - g_frameStart)
           .count();
   ++g_stats.frames;
-  g_sumMs += ms;
+  g_sumMs += static_cast<double>(ms);
   g_stats.maxMs = std::max(g_stats.maxMs, ms);
 }
 
