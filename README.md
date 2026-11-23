@@ -25,13 +25,13 @@
 
 This is [isarrider/xbmc](https://github.com/isarrider/xbmc), a fork of [xbmc/xbmc](https://github.com/xbmc/xbmc). It follows upstream `master` and adds the changes below, which are not in upstream yet. This fork's `master` contains all of them, and the Android test builds are made from it. Each change also lives on its own branch, from which it is (or is meant to be) proposed upstream. Once upstream merges a change, its row is removed here, and all upstream PRs are listed in the PR history below.
 
-| Change | Settings (`advancedsettings.xml`) | Upstream |
+| Change | Settings | Upstream |
 |---|---|---|
-| **Frame size graph in the Player Debug Info.** One dot per video frame with its size, a white line with the average bitrate over the last second, a grid with labels, and a legend line between `Player` and `VSyncOff`. Optionally colours I, P and B frames differently; the frame types are only parsed while the graph is shown. Optionally adds a pink line with the audio bitrate over the last second, aligned with the video frames, either over the frame dots or in its own strip below them. Off by default; while it is off, no frame or audio packet sizes are collected. While it is shown, it is updated at most four times a second, and only the 256-column strips of the graph that changed are redrawn and uploaded. Its memory is freed when the Player Debug Info is closed. | `video/playerdebugframegraph`: `enabled` `true`/`false` (default, the graph is off), `scale` `log`/`logarithmic` (default) or `lin`/`linear`, `mode` `sweep` (default) or `scroll`, `frametypes` `true`/`false` (default), `height` 10–90 % of the video height (default 35), `audio` `off` (default), `overlay` or `band` | [#30498](https://github.com/xbmc/xbmc/pull/30498), branch [`video-frame-graph`](https://github.com/isarrider/xbmc/tree/video-frame-graph) |
-| **CPU usage per thread in the Player Debug Info.** A `Threads:` line with the busiest threads of the last second in percent of one core, threads with the same name combined, e.g. `VideoPlayerVide x3 184%, ActiveAE 14%`. Entries under 1% are left out. The thread times come from `CCPUInfo::GetThreadCpuTimes()`, which Linux and Android implement by reading `/proc/self/task`; other platforms don't show the line. Off by default. Read at most once a second, only while the overlay is shown. | `video/playerdebugcpu`: `threads` `true`/`false` (default, the line is off), `count` 1–10 (default 5) | [#30573](https://github.com/xbmc/xbmc/pull/30573), branch [`debug-thread-cpu`](https://github.com/isarrider/xbmc/tree/debug-thread-cpu), uses the thread names from #30548 |
-| **CPU usage per core in the Player Debug Info.** A `Cores:` line above `Threads:` with each core's usage and the total, and a graphic in the top right corner: one bar per core, or each core's usage over the last minute. On Android this is Kodi's own usage, elsewhere the whole system's. Sampled once a second while the overlay is shown; the graphic is one small texture with its own pixel font, freed when the overlay is closed. | `video/playerdebugcpu`: `cores` `true`/`false` (default), `graph` `off` (default), `bars` or `history` | [#30596](https://github.com/xbmc/xbmc/pull/30596), branch [`debug-cpu-cores`](https://github.com/isarrider/xbmc/tree/debug-cpu-cores), needs #30573 |
-| **System and Frames lines and frame time history in the Player Debug Info.** A `System:` line below `Cores:` with the CPU clock per cluster, Kodi's and the free memory and, on Android 11+, the thermal status and headroom. A `Frames:` line below it with the render thread's time per frame (average and maximum of the last second) against the frame budget of the current refresh rate and how busy that kept the render thread in percent, coloured green, amber or red; where the device allows it, also the GPU time per frame (`GL_EXT_disjoint_timer_query`), Kodi's share of the GPU in percent and the Mali GPU clock. Anything the device doesn't let Kodi read is left out (see the probe results below). Optionally a graphic below the CPU graphic, in the same style and scale, with the last minute of frame times: average as a line with a fill, the slowest frame of each second as a light band with a red dot where it missed the budget, GPU time as a blue line, and the frame budget as a dashed line labelled in ms. The bar on the right shows the last second's GPU load in percent, or the render thread's where the GPU can't be timed. Frames are only timed while the Frames line or the graphic is shown. | `video/playerdebugsystem`: `system` and `frames` `true`/`false` (default), `graph` `off` (default) or `history` | fork only, branch [`debug-system`](https://github.com/isarrider/xbmc/tree/debug-system), needs #30596 |
-| **Configurable Player Debug Info.** Which lines are shown and in which order: `audio`, `video`, `player`, `framesizes`, `cores`, `system`, `frames`, `threads`, `vsync`, `geometry`; lines left out are hidden, and a line whose feature is switched off or that has nothing to show stays hidden even when listed. Text size, a dark box behind each line, and the corner of the text. Size and corner of the CPU and frame time graphics, which stay stacked; if text and graphics are set to the same corner, the graphics move to the other side. The frame-size graph stays at the bottom. Without these settings everything looks as before. Unknown line names or positions are reported in `kodi.log`. | `video/playerdebuginfo`: `lines`; `text`: `size`, `backdrop`, `position`; `graphics`: `size`, `position` | fork only, branch [`debug-lines`](https://github.com/isarrider/xbmc/tree/debug-lines) |
+| **Frame size graph in the Player Debug Info.** One dot per video frame with its size, a white line with the average bitrate over the last second, a grid with labels, and a legend line between `Player` and `VSyncOff`. Optionally colours I, P and B frames differently; the frame types are only parsed while the graph is shown. Optionally adds a pink line with the audio bitrate over the last second, aligned with the video frames, either over the frame dots or in its own strip below them. Off by default; while it is off, no frame or audio packet sizes are collected. While it is shown, it is updated at most four times a second, and only the 256-column strips of the graph that changed are redrawn and uploaded. Its memory is freed when the Player Debug Info is closed. | Player debug → Frame size graph: on/off (default off), Scale logarithmic (default) or linear, Mode sweep (default) or scroll, Height 10–90 % (default 35), Frame types on/off (default off), Audio bitrate off (default), overlay or band. In the upstream PR: `video/playerdebugframegraph` in `advancedsettings.xml` | [#30498](https://github.com/xbmc/xbmc/pull/30498), branch [`video-frame-graph`](https://github.com/isarrider/xbmc/tree/video-frame-graph) |
+| **CPU usage per thread in the Player Debug Info.** A `Threads:` line with the busiest threads of the last second in percent of one core, threads with the same name combined, e.g. `VideoPlayerVide x3 184%, ActiveAE 14%`. Entries under 1% are left out. The thread times come from `CCPUInfo::GetThreadCpuTimes()`, which Linux and Android implement by reading `/proc/self/task`; other platforms don't show the line. Off by default. Read at most once a second, only while the overlay is shown. | Player debug → CPU: Threads line on/off (default off), Number of threads 1–10 (default 5). In the upstream PR: `video/playerdebugcpu` in `advancedsettings.xml` | [#30573](https://github.com/xbmc/xbmc/pull/30573), branch [`debug-thread-cpu`](https://github.com/isarrider/xbmc/tree/debug-thread-cpu), uses the thread names from #30548 |
+| **CPU usage per core in the Player Debug Info.** A `Cores:` line above `Threads:` with each core's usage and the total, and a graphic in the top right corner: one bar per core, or each core's usage over the last minute. On Android this is Kodi's own usage, elsewhere the whole system's. Sampled once a second while the overlay is shown; the graphic is one small texture with its own pixel font, freed when the overlay is closed. | Player debug → CPU: Cores line on/off (default off), CPU graphic off (default), bars or history. In the upstream PR: `video/playerdebugcpu` in `advancedsettings.xml` | [#30596](https://github.com/xbmc/xbmc/pull/30596), branch [`debug-cpu-cores`](https://github.com/isarrider/xbmc/tree/debug-cpu-cores), needs #30573 |
+| **System and Frames lines and frame time history in the Player Debug Info.** A `System:` line below `Cores:` with the CPU clock per cluster, Kodi's and the free memory and, on Android 11+, the thermal status and headroom. A `Frames:` line below it with the render thread's time per frame (average and maximum of the last second) against the frame budget of the current refresh rate and how busy that kept the render thread in percent, coloured green, amber or red; where the device allows it, also the GPU time per frame (`GL_EXT_disjoint_timer_query`), Kodi's share of the GPU in percent and the Mali GPU clock. Anything the device doesn't let Kodi read is left out (see the probe results below). Optionally a graphic below the CPU graphic, in the same style and scale, with the last minute of frame times: average as a line with a fill, the slowest frame of each second as a light band with a red dot where it missed the budget, GPU time as a blue line, and the frame budget as a dashed line labelled in ms. The bar on the right shows the last second's GPU load in percent, or the render thread's where the GPU can't be timed. Frames are only timed while the Frames line or the graphic is shown. | Player debug → System and frames: System line, Frames line and Frame time graphic, each on/off (default off) | fork only, branch [`debug-system`](https://github.com/isarrider/xbmc/tree/debug-system), needs #30596 |
+| **Player debug settings menu.** Everything above can be set in Settings → Services → Player debug, right after Caching, shown at the Expert settings level. It also sets which lines the Player Debug Info shows (`Lines`, always in the default order; a line whose feature is off stays hidden), the text size, a dark box behind each line and the text's corner, and the size and corner of the CPU and frame time graphics, which stay stacked; if text and graphics are set to the same corner, the graphics move to the other side. The frame size graph stays at the bottom. With the default settings the Player Debug Info looks as it does upstream. In this fork the `<playerdebug…>` blocks in `advancedsettings.xml` are no longer read. | Player debug → Display: Lines, Text size 50–200 % (default 100), Text background off (default) to 100 %, Text position (default top left), Graphics size 50–200 % (default 100), Graphics position (default top right) | fork only, branches [`debug-lines`](https://github.com/isarrider/xbmc/tree/debug-lines) and [`debug-settings`](https://github.com/isarrider/xbmc/tree/debug-settings) |
 | **GitHub Actions on Node 24.** Kodi's own workflows use the current major versions of their actions, and the deprecated `set-output` command is replaced. | – | [#30547](https://github.com/xbmc/xbmc/pull/30547), branch [`workflows-node24`](https://github.com/isarrider/xbmc/tree/workflows-node24) |
 | **Threaded VC-1 decoding.** The internal FFmpeg gets frame threading for the VC-1 decoder from [isarrider/FFmpeg](https://github.com/isarrider/FFmpeg), so VC-1 without a hardware decoder uses several cores (tested on a Fire TV Stick 4K Max and a Pixel 8 Pro). | – | fork only, branch [`ffmpeg-vc1-threading`](https://github.com/isarrider/xbmc/tree/ffmpeg-vc1-threading); belongs upstream in FFmpeg |
 | **Android test builds.** A manually started workflow builds signed APKs for `armeabi-v7a` or `arm64-v8a` from any branch, as package `org.xbmc.kodi.isarrider`, so they install next to the official Kodi. | – | fork only |
@@ -72,48 +72,27 @@ What the probe found Kodi is allowed to read, as a base for further debug lines:
 1. **Get an APK.** Run the "Android build" workflow under Actions (branch `master`, `armeabi-v7a` for 32-bit devices such as the Fire TV Stick 4K Max, `arm64-v8a` for 64-bit phones) and download the APK from the finished run. Downloads need a GitHub login and expire after 90 days.
 2. **Install it.** The package is `org.xbmc.kodi.isarrider`, so it installs next to the official Kodi as a separate app, and newer test builds install over older ones and keep their settings. These builds are Kodi master (currently v23 alpha) plus the changes above; binary add-ons for v23 may be missing.
 3. **Copy your settings from the official Kodi (optional).** In the official Kodi, add `special://home` as a source in the file manager and copy `userdata` and `addons` to `Download/kodi-backup/`. In the test build, add `special://home` the same way and copy both folders back into it. Then stop the test build with Android Settings → Apps → Force stop instead of exiting Kodi, because Kodi saves its settings on exit and would overwrite the copied ones. The Backup add-on by robweber does the same in fewer steps.
-4. **Turn the features on.** Put `advancedsettings.xml` into `userdata/` (in the file manager: `special://home/userdata/`, from `Download`) and restart Kodi; the file is only read at startup:
+4. **Turn the features on.** In Settings, switch the settings level to Expert (the cog at the bottom left of the settings screens), then open Services → Player debug, right after Caching. Everything is off by default:
 
-```xml
-<advancedsettings>
-  <video>
-    <playerdebuginfo>
-      <!-- lines to show, in this order; leave out to show all in the default order:
-           audio, video, player, framesizes, cores, system, frames, threads, vsync, geometry -->
-      <lines>audio, video, player, framesizes, cores, system, frames, threads, vsync, geometry</lines>
-      <text>
-        <size>100</size>               <!-- text size in %, 50-200 (default 100) -->
-        <backdrop>0</backdrop>         <!-- dark box behind each line, opacity in %, 0-100 (default 0 = off) -->
-        <position>topleft</position>   <!-- topleft (default) / topright / bottomleft / bottomright -->
-      </text>
-      <graphics>                       <!-- the CPU and frame time graphics, stacked -->
-        <size>100</size>               <!-- size in %, 50-200 (default 100) -->
-        <position>topright</position>  <!-- topright (default) / topleft / bottomright / bottomleft;
-                                            in the text's corner they move to the other side -->
-      </graphics>
-    </playerdebuginfo>
-    <playerdebugcpu>
-      <threads>true</threads>       <!-- true: show the Threads line / false (default): hide it -->
-      <count>5</count>              <!-- number of threads shown, 1-10 (default 5) -->
-      <cores>true</cores>           <!-- true: show the Cores line / false (default): hide it -->
-      <graph>bars</graph>           <!-- off (default) / bars: one bar per core / history: last minute per core, top right -->
-    </playerdebugcpu>
-    <playerdebugframegraph>
-      <enabled>true</enabled>       <!-- true: show the graph / false (default): off -->
-      <scale>log</scale>            <!-- log | logarithmic (default) or lin | linear -->
-      <mode>sweep</mode>            <!-- sweep (default): cursor runs left to right and overwrites / scroll: graph moves left -->
-      <height>75</height>           <!-- graph height in % of the video height, 10-90 (default 35) -->
-      <frametypes>true</frametypes> <!-- true: I/P/B frames as amber/green/blue / false (default): keyframes amber, others green -->
-      <audio>overlay</audio>        <!-- off (default) / overlay: pink audio bitrate line over the dots / band: in its own strip below -->
-    </playerdebugframegraph>
-    <playerdebugsystem>
-      <system>true</system>         <!-- true: show the System line (clocks, memory, thermal) / false (default) -->
-      <frames>true</frames>         <!-- true: show the Frames line (frame time, busy, GPU) / false (default) -->
-      <graph>history</graph>        <!-- off (default) / history: last minute of frame times, below the CPU graphic -->
-    </playerdebugsystem>
-  </video>
-</advancedsettings>
-```
+| Group | Setting | Default |
+|---|---|---|
+| Display | Lines: Audio, Video, Player, Frame sizes, Cores, System, Frames, Threads, VSync, Content geometry | all |
+| Display | Text size | 100 % |
+| Display | Text background (dark box behind each line) | off |
+| Display | Text position | top left |
+| Display | Graphics size (CPU and frame time graphics) | 100 % |
+| Display | Graphics position | top right |
+| CPU | Threads line / Number of threads | off / 5 |
+| CPU | Cores line | off |
+| CPU | CPU graphic: off, bars, history | off |
+| System and frames | System line / Frames line / Frame time graphic | off |
+| Frame size graph | Frame size graph | off |
+| Frame size graph | Scale: logarithmic, linear / Mode: sweep, scroll | logarithmic / sweep |
+| Frame size graph | Height | 35 % |
+| Frame size graph | Frame types (colour I, P and B frames) | off |
+| Frame size graph | Audio bitrate: off, overlay, band | off |
+
+   Changes apply the next time the Player Debug Info is opened; text size and position with the next video.
 
 5. **Show the Player Debug Info** during playback: with a keyboard press `Ctrl+Shift+O`; on a remote, map `PlayerDebug` to a button with a keymap. On a touch screen, this keymap in `userdata/keymaps/framegraph.xml` opens it with a two-finger long press and the Player Process Info with a two-finger swipe right (Kodi only recognises gestures with up to two fingers):
 
