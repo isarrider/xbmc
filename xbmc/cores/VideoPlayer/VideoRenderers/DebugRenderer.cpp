@@ -346,7 +346,9 @@ void CDebugRenderer::CRenderer::CreateSubtitlesStyle()
   m_debugOverlayStyle->marginVertical = 12;
   if (advancedSettings->m_videoDebugTextBackdrop > 0)
   {
-    m_debugOverlayStyle->borderStyle = BorderType::BOX;
+    // One box behind the whole line. BOX draws a box per run of text, which overlap where the
+    // colour changes, and casts a shadow.
+    m_debugOverlayStyle->borderStyle = BorderType::SQUARE_BOX;
     m_debugOverlayStyle->backgroundOpacity = advancedSettings->m_videoDebugTextBackdrop;
   }
   static constexpr std::array<FontAlign, 4> alignments = {
