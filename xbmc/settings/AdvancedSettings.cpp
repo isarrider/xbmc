@@ -315,6 +315,7 @@ void CAdvancedSettings::Initialize()
   m_videoDebugThreadsCores = false;
   m_videoDebugThreadsGraph = 0;
   m_videoDebugSystem = false;
+  m_videoDebugFrames = false;
   m_videoDebugSystemGraph = false;
 
   m_videoDefaultLatency = 0.0;
@@ -990,7 +991,8 @@ void CAdvancedSettings::ParseSettingsFile(const std::string &file)
     const TiXmlElement* pDebugSystem = pElement->FirstChildElement("playerdebugsystem");
     if (pDebugSystem)
     {
-      XMLUtils::GetBoolean(pDebugSystem, "enabled", m_videoDebugSystem);
+      XMLUtils::GetBoolean(pDebugSystem, "system", m_videoDebugSystem);
+      XMLUtils::GetBoolean(pDebugSystem, "frames", m_videoDebugFrames);
       std::string graph;
       if (XMLUtils::GetString(pDebugSystem, "graph", graph))
         m_videoDebugSystemGraph = StringUtils::EqualsNoCase(graph, "history");

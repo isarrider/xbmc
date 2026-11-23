@@ -206,6 +206,7 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
     bool m_videoDebugThreadsCores;
     int m_videoDebugThreadsGraph; //!< 0 off, 1 bars, 2 history
     bool m_videoDebugSystem;
+    bool m_videoDebugFrames;
     bool m_videoDebugSystemGraph;
     float m_videoDefaultLatency;
     float m_videoDefaultHdrExtraLatency;

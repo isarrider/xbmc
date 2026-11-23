@@ -119,15 +119,25 @@ void CDebugRenderer::SetInfo(DEBUG_INFO_PLAYER& info, const DEBUG_INFO_FRAMES& f
   }
 
   m_systemGraph = advancedSettings->m_videoDebugSystemGraph;
-  if (advancedSettings->m_videoDebugSystem || m_systemGraph)
-    m_systemInfo.Update();
+  const bool timeFrames = advancedSettings->m_videoDebugFrames || m_systemGraph;
+  if (advancedSettings->m_videoDebugSystem || timeFrames)
+    m_systemInfo.Update(timeFrames);
   if (advancedSettings->m_videoDebugSystem)
   {
-    const std::string systemInfo = m_systemInfo.GetSummary();
+    const std::string systemInfo = m_systemInfo.GetSystemSummary();
     if (!systemInfo.empty())
     {
       std::string system = "System: " + systemInfo;
       m_adapter->AddSubtitle(system, 0., 5000000.);
+    }
+  }
+  if (advancedSettings->m_videoDebugFrames)
+  {
+    const std::string frameInfo = m_systemInfo.GetFrameSummary();
+    if (!frameInfo.empty())
+    {
+      std::string frames = "Frames: " + frameInfo;
+      m_adapter->AddSubtitle(frames, 0., 5000000.);
     }
   }
 

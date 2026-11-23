@@ -20,7 +20,7 @@ class CTexture;
 
 /*!
  * \brief CPU clocks, memory, frame times, GPU and thermal state for the player debug overlay,
- * as a text line and optionally as a history graphic of the frame times.
+ * as a System and a Frames line and optionally as a history graphic of the frame times.
  *
  * Only what the device lets Kodi read is shown: GPU time needs GL_EXT_disjoint_timer_query,
  * the GPU clock a readable Mali clock file and the thermal state Android 11.
@@ -32,9 +32,12 @@ public:
   ~CDebugSystemInfo();
 
   //! Take a sample if the last one is a second old. Call while the overlay is shown.
-  void Update();
-  //! e.g. "CPU 1.33 / 2.37 GHz  RAM Kodi 350 MB, free 5.1 GB  Frame 3.2, max 7.9 of 16.7 ms"
-  std::string GetSummary() const;
+  //! timeFrames: whether the frame times are needed, i.e. their line or graphic is shown
+  void Update(bool timeFrames);
+  //! e.g. "CPU 1.33 / 2.37 GHz  RAM Kodi 350 MB, free 5.1 GB  Thermal ok 0.65"
+  std::string GetSystemSummary() const;
+  //! e.g. "3.2 ms, max 7.9 of 16.7 ms, 19% busy  GPU 2.1 ms, 13% @ 590 MHz"
+  std::string GetFrameSummary() const;
   //! Draw the frame time history at the right edge, below top, at most at maxScale (0 for no
   //! limit) to line up with a graphic above it. Returns its bottom.
   float Render(const CRect& view, float top, float maxScale);
