@@ -15,6 +15,7 @@
 #include "settings/AdvancedSettings.h"
 #include "settings/SettingsComponent.h"
 #include "settings/SubtitlesSettings.h"
+#include "utils/StringUtils.h"
 #include "utils/log.h"
 #include "windowing/GraphicContext.h"
 #include "windowing/WinSystem.h"
@@ -169,6 +170,9 @@ void CDebugRenderer::SetInfo(DEBUG_INFO_PLAYER& info, const DEBUG_INFO_FRAMES& f
   // without use all these fixed values.
   const auto add = [this](Line& line)
   {
+    // Trailing spaces, e.g. after the VSync values, would get a box of their own with a text
+    // background
+    StringUtils::TrimRight(line.text);
     if (line.always || !line.text.empty())
       m_adapter->AddSubtitle(line.text, 0., 5000000.);
   };
