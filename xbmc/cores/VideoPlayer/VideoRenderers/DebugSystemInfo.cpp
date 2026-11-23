@@ -361,6 +361,7 @@ CSize CDebugSystemInfo::Prepare(const CRect& view, float size, float maxScale, f
   const auto w = static_cast<unsigned int>(std::lround(width * scale));
   const auto h = static_cast<unsigned int>(std::lround(height * scale));
 
+  bool created = false;
   if (w != m_width || h != m_height || !m_texture)
   {
     m_width = w;
@@ -368,12 +369,20 @@ CSize CDebugSystemInfo::Prepare(const CRect& view, float size, float maxScale, f
     m_pixels.assign(static_cast<size_t>(w) * h, 0);
     m_texture = CTexture::CreateTexture(w, h, XB_FMT_A8R8G8B8);
     m_changed = true;
+    created = true;
   }
   if (!m_texture)
     return {};
 
-  if (m_changed)
+  // A new sample is drawn one frame later, so that it doesn't add to the CPU graphic's redraw in
+  // the same frame. A new texture is drawn right away.
+  if (m_changed && !created && !m_redrawDue)
   {
+    m_redrawDue = true;
+  }
+  else if (m_changed)
+  {
+    m_redrawDue = false;
     Draw(scale);
     m_texture->Update(w, h, w * 4, XB_FMT_A8R8G8B8,
                       reinterpret_cast<const unsigned char*>(m_pixels.data()), false);
@@ -403,6 +412,7 @@ void CDebugSystemInfo::Reset()
   KODI::DEBUG_FRAME_TIME::SetEnabled(false);
   m_lastSample = {};
   m_history = {};
+  m_redrawDue = false;
   m_current = {0.0f, 0.0f, -1.0f, 0.0f, -1.0f};
   m_clockKHz.clear();
   m_thermal.reset();
@@ -422,12 +432,26 @@ void CDebugSystemInfo::Draw(float scale)
 
   std::fill(m_pixels.begin(), m_pixels.end(), COLOR_BACKDROP);
 
+  // Most areas are filled over the same background, so the last blend can usually be reused
+  uint32_t lastDst = 0;
+  uint32_t lastColor = 0;
+  uint32_t lastBlend = 0;
   const auto fill = [&](int x1, int y1, int x2, int y2, uint32_t color)
   {
     for (int y = std::max(y1, 0); y < std::min(y2, h); ++y)
+    {
       for (int x = std::max(x1, 0); x < std::min(x2, w); ++x)
-        m_pixels[static_cast<size_t>(y) * w + x] =
-            Blend(m_pixels[static_cast<size_t>(y) * w + x], color);
+      {
+        uint32_t& pixel = m_pixels[static_cast<size_t>(y) * w + x];
+        if (pixel != lastDst || color != lastColor)
+        {
+          lastDst = pixel;
+          lastColor = color;
+          lastBlend = Blend(pixel, color);
+        }
+        pixel = lastBlend;
+      }
+    }
   };
   const auto textWidth = [&](const std::string& text)
   { return static_cast<int>(text.size()) * (GLYPH_WIDTH + 1) * font - font; };
@@ -539,8 +563,9 @@ void CDebugSystemInfo::Draw(float scale)
   {
     if (m_history[i].maxMs <= m_budgetMs)
       continue;
-    const int x = plotX + sampleX(i);
-    const int y = toY(m_history[i].maxMs, top);
+    // Kept inside the plot, also for frames beyond the top of the scale
+    const int x = std::clamp(plotX + sampleX(i), plotX + dot, plotX + plotWidth - dot);
+    const int y = std::clamp(toY(m_history[i].maxMs, top), top + dot, bottom - dot);
     fill(x - dot, y - dot, x + dot, y + dot, COLOR_HIGH);
   }
 

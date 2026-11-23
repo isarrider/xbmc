@@ -15,6 +15,7 @@
 #if defined(TARGET_ANDROID)
 #include "ServiceBroker.h"
 #include "rendering/RenderSystem.h"
+#include "utils/log.h"
 
 #include "system_gl.h"
 
@@ -61,6 +62,10 @@ struct GpuTimer
   bool running = false;
   double sumMs = 0.0;
   int count = 0;
+  // For the log when the queries are freed
+  int totalResults = 0;
+  int totalDisjoint = 0;
+  int totalSkipped = 0;
 
   bool Available()
   {
@@ -76,7 +81,13 @@ struct GpuTimer
         endQuery = reinterpret_cast<EndQuery>(eglGetProcAddress("glEndQueryEXT"));
         getQueryObjectuiv =
             reinterpret_cast<GetQueryObjectuiv>(eglGetProcAddress("glGetQueryObjectuivEXT"));
+        CLog::Log(LOGINFO,
+                  "DebugFrameTime: GPU timer functions: gen {} delete {} begin {} end {} get {}",
+                  genQueries != nullptr, deleteQueries != nullptr, beginQuery != nullptr,
+                  endQuery != nullptr, getQueryObjectuiv != nullptr);
       }
+      else
+        CLog::Log(LOGINFO, "DebugFrameTime: no GL_EXT_disjoint_timer_query, no GPU time");
     }
     return genQueries && deleteQueries && beginQuery && endQuery && getQueryObjectuiv;
   }
@@ -101,7 +112,10 @@ struct GpuTimer
       {
         sumMs += ns / 1e6;
         ++count;
+        ++totalResults;
       }
+      else
+        ++totalDisjoint;
     }
   }
 
@@ -117,7 +131,10 @@ struct GpuTimer
     Collect();
     // Skip this frame if the GPU is still busy with the frame that used this query
     if (pending[current])
+    {
+      ++totalSkipped;
       return;
+    }
     beginQuery(TIME_ELAPSED, queries[current]);
     running = true;
   }
@@ -134,6 +151,14 @@ struct GpuTimer
 
   void Free()
   {
+    if (created)
+      CLog::Log(LOGINFO,
+                "DebugFrameTime: GPU timer: {} results, {} discarded as disjoint, {} frames "
+                "skipped while the GPU was behind",
+                totalResults, totalDisjoint, totalSkipped);
+    totalResults = 0;
+    totalDisjoint = 0;
+    totalSkipped = 0;
     if (created)
       deleteQueries(static_cast<GLsizei>(queries.size()), queries.data());
     created = false;
