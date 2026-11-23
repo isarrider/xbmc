@@ -32,6 +32,7 @@ This is [isarrider/xbmc](https://github.com/isarrider/xbmc), a fork of [xbmc/xbm
 | **CPU usage per core in the Player Debug Info.** A `Cores:` line above `Threads:` with each core's usage and the total, and a graphic in the top right corner: one bar per core, or each core's usage over the last minute. On Android this is Kodi's own usage, elsewhere the whole system's. Sampled once a second while the overlay is shown; the graphic is one small texture with its own pixel font, freed when the overlay is closed. | Player debug → CPU: Cores line on/off (default off), CPU graphic off (default), bars or history. In the upstream PR: `video/playerdebugcpu` in `advancedsettings.xml` | [#30596](https://github.com/xbmc/xbmc/pull/30596), branch [`debug-cpu-cores`](https://github.com/isarrider/xbmc/tree/debug-cpu-cores), needs #30573 |
 | **System and Frames lines and frame time history in the Player Debug Info.** A `System:` line below `Cores:` with the CPU clock per cluster, Kodi's and the free memory and, on Android 11+, the thermal status and headroom. A `Frames:` line below it with the render thread's time per frame (average and maximum of the last second) against the frame budget of the current refresh rate and how busy that kept the render thread in percent, coloured green, amber or red; where the device allows it, also the GPU time per frame (`GL_EXT_disjoint_timer_query`), Kodi's share of the GPU in percent and the Mali GPU clock. Anything the device doesn't let Kodi read is left out (see the probe results below). Optionally a graphic below the CPU graphic, in the same style and scale, with the last minute of frame times: average as a line with a fill, the slowest frame of each second as a light band with a red dot where it missed the budget, GPU time as a blue line, and the frame budget as a dashed line labelled in ms. The bar on the right shows the last second's GPU load in percent, or the render thread's where the GPU can't be timed. Frames are only timed while the Frames line or the graphic is shown. | Player debug → System and frames: System line, Frames line and Frame time graphic, each on/off (default off) | fork only, branch [`debug-system`](https://github.com/isarrider/xbmc/tree/debug-system), needs #30596 |
 | **Player debug settings menu.** Everything above can be set in Settings → Services → Player debug, right after Caching, shown at the Expert settings level. It also sets which lines the Player Debug Info shows (`Lines`, always in the default order; a line whose feature is off stays hidden), the text size, a dark box behind each line and the text's corner, and the size and corner of the CPU and frame time graphics, which stay stacked; if text and graphics are set to the same corner, the graphics move to the other side. The frame size graph stays at the bottom. With the default settings the Player Debug Info looks as it does upstream. In this fork the `<playerdebug…>` blocks in `advancedsettings.xml` are no longer read. | Player debug → Display: Lines, Text size 50–200 % (default 100), Text background off (default) to 100 %, Text position (default top left), Graphics size 50–200 % (default 100), Graphics position (default top right) | fork only, branches [`debug-lines`](https://github.com/isarrider/xbmc/tree/debug-lines) and [`debug-settings`](https://github.com/isarrider/xbmc/tree/debug-settings) |
+| **Two-finger gestures for the debug overlays.** In fullscreen video, a two-finger long press toggles the Player Debug Info and a two-finger swipe right the Player Process Info, so phones need no keymap file of their own. Both gestures were unused there; remotes and keyboards are unaffected. | – | fork only, branch [`debug-touch`](https://github.com/isarrider/xbmc/tree/debug-touch) |
 | **GitHub Actions on Node 24.** Kodi's own workflows use the current major versions of their actions, and the deprecated `set-output` command is replaced. | – | [#30547](https://github.com/xbmc/xbmc/pull/30547), branch [`workflows-node24`](https://github.com/isarrider/xbmc/tree/workflows-node24) |
 | **Threaded VC-1 decoding.** The internal FFmpeg gets frame threading for the VC-1 decoder from [isarrider/FFmpeg](https://github.com/isarrider/FFmpeg), so VC-1 without a hardware decoder uses several cores (tested on a Fire TV Stick 4K Max and a Pixel 8 Pro). | – | fork only, branch [`ffmpeg-vc1-threading`](https://github.com/isarrider/xbmc/tree/ffmpeg-vc1-threading); belongs upstream in FFmpeg |
 | **Android test builds.** A manually started workflow builds signed APKs for `armeabi-v7a` or `arm64-v8a` from any branch, as package `org.xbmc.kodi.isarrider`, so they install next to the official Kodi. | – | fork only |
@@ -94,18 +95,10 @@ What the probe found Kodi is allowed to read, as a base for further debug lines:
 
    Changes apply the next time the Player Debug Info is opened; text size and position with the next video.
 
-5. **Show the Player Debug Info** during playback: with a keyboard press `Ctrl+Shift+O`; on a remote, map `PlayerDebug` to a button with a keymap. On a touch screen, this keymap in `userdata/keymaps/framegraph.xml` opens it with a two-finger long press and the Player Process Info with a two-finger swipe right (Kodi only recognises gestures with up to two fingers):
-
-```xml
-<keymap>
-  <FullScreenVideo>
-    <touch>
-      <longpress pointers="2">PlayerDebug</longpress>
-      <swipe direction="right" pointers="2">PlayerProcessInfo</swipe>
-    </touch>
-  </FullScreenVideo>
-</keymap>
-```
+5. **Show the Player Debug Info** during playback:
+   - **Phone or tablet:** two-finger long press on the video, the same again to close it. A two-finger swipe right opens the Player Process Info. Both are built into this fork's touch keymap, so no keymap file is needed.
+   - **Keyboard:** `Ctrl+Shift+O`.
+   - **Remote, e.g. Fire TV:** the touch gestures don't apply; map `PlayerDebug` to a button with a keymap in `userdata/keymaps/`.
 
 To see the exact difference against upstream: [compare xbmc:master...isarrider:master](https://github.com/xbmc/xbmc/compare/master...isarrider:xbmc:master).
 
