@@ -54,6 +54,8 @@
       <swipe direction="down" pointers="2">SkipPrevious</swipe>
       <tap pointers="2">Playlist</tap>
       <tap pointers="3">PlayPause</tap>
+      <longpress pointers="2">PlayerDebug</longpress>
+      <swipe direction="right" pointers="2">PlayerProcessInfo</swipe>
     </touch>
   </FullScreenVideo>
   <FullScreenGame>
