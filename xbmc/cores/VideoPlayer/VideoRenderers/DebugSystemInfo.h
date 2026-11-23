@@ -38,9 +38,14 @@ public:
   std::string GetSystemSummary() const;
   //! e.g. "3.2 ms, max 7.9 of 16.7 ms, 19% busy  GPU 2.1 ms, 13% @ 590 MHz"
   std::string GetFrameSummary() const;
-  //! Draw the frame time history at the right edge, below top, at most at maxScale (0 for no
-  //! limit) to line up with a graphic above it. Returns its bottom.
-  float Render(const CRect& view, float top, float maxScale);
+  //! Draw the frame time history into its texture at size (1 = normal) if it changed, at most at
+  //! maxScale (0 for no limit) to line up with the CPU graphic, and at most maxHeight high.
+  //! Returns its size on screen, empty if there is nothing to show.
+  CSize Prepare(const CRect& view, float size, float maxScale, float maxHeight);
+  //! Show the prepared graphic with its top left corner at position
+  void RenderAt(const CPoint& position) const;
+  //! The scale of the prepared graphic, 0 if none
+  float GetScale() const { return m_scale; }
   //! Free the samples, pixels and texture and stop timing frames, e.g. when the overlay is closed
   void Reset();
 
@@ -75,6 +80,7 @@ private:
   struct Thermal;
   std::unique_ptr<Thermal> m_thermal;
 
+  float m_scale{0.0f};
   unsigned int m_width{0};
   unsigned int m_height{0};
   std::vector<uint32_t> m_pixels;

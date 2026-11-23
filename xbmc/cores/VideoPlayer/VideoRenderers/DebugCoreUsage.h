@@ -42,9 +42,12 @@ public:
   void Update();
   //! e.g. "#0 78%  #1 64%  (total 71%)", empty if not available
   std::string GetSummary() const;
-  //! Returns the bottom of the graphic, or view.y1 if none was drawn
-  float Render(const CRect& view, Graph graph);
-  //! The scale of the last drawn graphic, 0 if none
+  //! Draw the graphic into its texture at size (1 = normal) if it changed, fitting it into view.
+  //! Returns its size on screen, empty if there is nothing to show.
+  CSize Prepare(const CRect& view, Graph graph, float size);
+  //! Show the prepared graphic with its top left corner at position
+  void RenderAt(const CPoint& position) const;
+  //! The scale of the prepared graphic, 0 if none
   float GetScale() const { return m_scale; }
   //! Free the samples, pixels and texture, e.g. when the overlay is closed
   void Reset();

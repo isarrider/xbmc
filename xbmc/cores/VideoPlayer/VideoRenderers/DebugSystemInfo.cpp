@@ -345,18 +345,19 @@ std::string CDebugSystemInfo::GetFrameSummary() const
   return summary;
 }
 
-float CDebugSystemInfo::Render(const CRect& view, float top, float maxScale)
+CSize CDebugSystemInfo::Prepare(const CRect& view, float size, float maxScale, float maxHeight)
 {
+  m_scale = 0.0f;
   if (m_history.empty() || m_budgetMs <= 0.0f || view.IsEmpty())
-    return top;
+    return {};
 
   const float width = 4 * PADDING + LABEL_WIDTH + PLOT_WIDTH + TOTAL_WIDTH;
   const float height = 2 * PADDING + PLOT_HEIGHT;
   const float scale =
-      std::min({maxScale > 0.0f ? maxScale : std::max(view.Height() / 1080.0f, 0.5f),
-                (view.Width() - 2 * MARGIN) / width, (view.y2 - top - 2 * MARGIN) / height});
+      std::min({maxScale > 0.0f ? maxScale : std::max(view.Height() / 1080.0f, 0.5f) * size,
+                (view.Width() - 2 * MARGIN) / width, maxHeight / height});
   if (scale <= 0.0f)
-    return top;
+    return {};
   const auto w = static_cast<unsigned int>(std::lround(width * scale));
   const auto h = static_cast<unsigned int>(std::lround(height * scale));
 
@@ -369,7 +370,7 @@ float CDebugSystemInfo::Render(const CRect& view, float top, float maxScale)
     m_changed = true;
   }
   if (!m_texture)
-    return top;
+    return {};
 
   if (m_changed)
   {
@@ -379,15 +380,22 @@ float CDebugSystemInfo::Render(const CRect& view, float top, float maxScale)
     m_changed = false;
   }
 
-  const float x2 = view.x2 - MARGIN * scale;
-  const float y1 = top + MARGIN * scale;
-  const CRect rect(x2 - static_cast<float>(w), y1, x2, y1 + static_cast<float>(h));
+  m_scale = scale;
+  return {static_cast<float>(w), static_cast<float>(h)};
+}
+
+void CDebugSystemInfo::RenderAt(const CPoint& position) const
+{
+  if (m_scale <= 0.0f || !m_texture)
+    return;
+
+  const CRect rect(position.x, position.y, position.x + static_cast<float>(m_width),
+                   position.y + static_cast<float>(m_height));
   // The texture may be padded, e.g. to a power of two
-  const CRect texCoords(0.0f, 0.0f,
-                        static_cast<float>(w) / static_cast<float>(m_texture->GetTextureWidth()),
-                        static_cast<float>(h) / static_cast<float>(m_texture->GetTextureHeight()));
+  const CRect texCoords(
+      0.0f, 0.0f, static_cast<float>(m_width) / static_cast<float>(m_texture->GetTextureWidth()),
+      static_cast<float>(m_height) / static_cast<float>(m_texture->GetTextureHeight()));
   CGUITexture::DrawQuad(rect, 0xFFFFFFFF, m_texture.get(), &texCoords, -1.0f);
-  return rect.y2;
 }
 
 void CDebugSystemInfo::Reset()
@@ -400,6 +408,7 @@ void CDebugSystemInfo::Reset()
   m_thermal.reset();
   m_pixels = std::vector<uint32_t>();
   m_texture.reset();
+  m_scale = 0.0f;
   m_width = 0;
   m_height = 0;
 }
