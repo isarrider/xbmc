@@ -31,7 +31,7 @@ This is [isarrider/xbmc](https://github.com/isarrider/xbmc), a fork of [xbmc/xbm
 | **CPU usage per thread in the Player Debug Info.** A `Threads:` line with the busiest threads of the last second in percent of one core, threads with the same name combined, e.g. `VideoPlayerVide x3 184%, ActiveAE 14%`. Entries under 1% are left out. The thread times come from `CCPUInfo::GetThreadCpuTimes()`, which Linux and Android implement by reading `/proc/self/task`; other platforms don't show the line. Off by default. Read at most once a second, only while the overlay is shown. | `video/playerdebugcpu`: `threads` `true`/`false` (default, the line is off), `count` 1–10 (default 5) | [#30573](https://github.com/xbmc/xbmc/pull/30573), branch [`debug-thread-cpu`](https://github.com/isarrider/xbmc/tree/debug-thread-cpu), uses the thread names from #30548 |
 | **CPU usage per core in the Player Debug Info.** A `Cores:` line above `Threads:` with each core's usage and the total, and a graphic in the top right corner: one bar per core, or each core's usage over the last minute. On Android this is Kodi's own usage, elsewhere the whole system's. Sampled once a second while the overlay is shown; the graphic is one small texture with its own pixel font, freed when the overlay is closed. | `video/playerdebugcpu`: `cores` `true`/`false` (default), `graph` `off` (default), `bars` or `history` | [#30596](https://github.com/xbmc/xbmc/pull/30596), branch [`debug-cpu-cores`](https://github.com/isarrider/xbmc/tree/debug-cpu-cores), needs #30573 |
 | **System and Frames lines and frame time history in the Player Debug Info.** A `System:` line below `Cores:` with the CPU clock per cluster, Kodi's and the free memory and, on Android 11+, the thermal status and headroom. A `Frames:` line below it with the render thread's time per frame (average and maximum of the last second) against the frame budget of the current refresh rate and how busy that kept the render thread in percent, coloured green, amber or red; where the device allows it, also the GPU time per frame (`GL_EXT_disjoint_timer_query`), Kodi's share of the GPU in percent and the Mali GPU clock. Anything the device doesn't let Kodi read is left out (see the probe results below). Optionally a graphic below the CPU graphic, in the same style and scale, with the last minute of frame times: average as a line with a fill, the slowest frame of each second as a light band with a red dot where it missed the budget, GPU time as a blue line, and the frame budget as a dashed line labelled in ms. The bar on the right shows the last second's GPU load in percent, or the render thread's where the GPU can't be timed. Frames are only timed while the Frames line or the graphic is shown. | `video/playerdebugsystem`: `system` and `frames` `true`/`false` (default), `graph` `off` (default) or `history` | fork only, branch [`debug-system`](https://github.com/isarrider/xbmc/tree/debug-system), needs #30596 |
-| **Choose and order the Player Debug Info lines.** A list of line names in the order to show them: `audio`, `video`, `player`, `framesizes`, `cores`, `system`, `frames`, `threads`, `vsync`, `geometry`. Lines left out are hidden. Without the setting, everything is shown in the default order as before. A line whose feature is switched off, or that has nothing to show, stays hidden even when listed; unknown names are reported in `kodi.log`. | `video/playerdebuginfo`: `lines` | fork only, branch [`debug-lines`](https://github.com/isarrider/xbmc/tree/debug-lines) |
+| **Configurable Player Debug Info.** Which lines are shown and in which order: `audio`, `video`, `player`, `framesizes`, `cores`, `system`, `frames`, `threads`, `vsync`, `geometry`; lines left out are hidden, and a line whose feature is switched off or that has nothing to show stays hidden even when listed. Text size, a dark box behind each line, and the corner of the text. Size and corner of the CPU and frame time graphics, which stay stacked; if text and graphics are set to the same corner, the graphics move to the other side. The frame-size graph stays at the bottom. Without these settings everything looks as before. Unknown line names or positions are reported in `kodi.log`. | `video/playerdebuginfo`: `lines`; `text`: `size`, `backdrop`, `position`; `graphics`: `size`, `position` | fork only, branch [`debug-lines`](https://github.com/isarrider/xbmc/tree/debug-lines) |
 | **GitHub Actions on Node 24.** Kodi's own workflows use the current major versions of their actions, and the deprecated `set-output` command is replaced. | – | [#30547](https://github.com/xbmc/xbmc/pull/30547), branch [`workflows-node24`](https://github.com/isarrider/xbmc/tree/workflows-node24) |
 | **Threaded VC-1 decoding.** The internal FFmpeg gets frame threading for the VC-1 decoder from [isarrider/FFmpeg](https://github.com/isarrider/FFmpeg), so VC-1 without a hardware decoder uses several cores (tested on a Fire TV Stick 4K Max and a Pixel 8 Pro). | – | fork only, branch [`ffmpeg-vc1-threading`](https://github.com/isarrider/xbmc/tree/ffmpeg-vc1-threading); belongs upstream in FFmpeg |
 | **Android test builds.** A manually started workflow builds signed APKs for `armeabi-v7a` or `arm64-v8a` from any branch, as package `org.xbmc.kodi.isarrider`, so they install next to the official Kodi. | – | fork only |
@@ -77,6 +77,21 @@ What the probe found Kodi is allowed to read, as a base for further debug lines:
 ```xml
 <advancedsettings>
   <video>
+    <playerdebuginfo>
+      <!-- lines to show, in this order; leave out to show all in the default order:
+           audio, video, player, framesizes, cores, system, frames, threads, vsync, geometry -->
+      <lines>audio, video, player, framesizes, cores, system, frames, threads, vsync, geometry</lines>
+      <text>
+        <size>100</size>               <!-- text size in %, 50-200 (default 100) -->
+        <backdrop>0</backdrop>         <!-- dark box behind each line, opacity in %, 0-100 (default 0 = off) -->
+        <position>topleft</position>   <!-- topleft (default) / topright / bottomleft / bottomright -->
+      </text>
+      <graphics>                       <!-- the CPU and frame time graphics, stacked -->
+        <size>100</size>               <!-- size in %, 50-200 (default 100) -->
+        <position>topright</position>  <!-- topright (default) / topleft / bottomright / bottomleft;
+                                            in the text's corner they move to the other side -->
+      </graphics>
+    </playerdebuginfo>
     <playerdebugcpu>
       <threads>true</threads>       <!-- true: show the Threads line / false (default): hide it -->
       <count>5</count>              <!-- number of threads shown, 1-10 (default 5) -->
@@ -91,11 +106,6 @@ What the probe found Kodi is allowed to read, as a base for further debug lines:
       <frametypes>true</frametypes> <!-- true: I/P/B frames as amber/green/blue / false (default): keyframes amber, others green -->
       <audio>overlay</audio>        <!-- off (default) / overlay: pink audio bitrate line over the dots / band: in its own strip below -->
     </playerdebugframegraph>
-    <playerdebuginfo>
-      <!-- lines to show, in this order; leave out to show all in the default order:
-           audio, video, player, framesizes, cores, system, frames, threads, vsync, geometry -->
-      <lines>audio, video, player, framesizes, cores, system, frames, threads, vsync, geometry</lines>
-    </playerdebuginfo>
     <playerdebugsystem>
       <system>true</system>         <!-- true: show the System line (clocks, memory, thermal) / false (default) -->
       <frames>true</frames>         <!-- true: show the Frames line (frame time, busy, GPU) / false (default) -->
