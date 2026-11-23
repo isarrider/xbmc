@@ -71,6 +71,7 @@ private:
   //! Oldest first, at most one minute
   std::vector<Sample> m_history;
   bool m_changed{false};
+  bool m_redrawDue{false};
 
   struct Thermal;
   std::unique_ptr<Thermal> m_thermal;
