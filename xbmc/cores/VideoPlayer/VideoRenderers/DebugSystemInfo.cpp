@@ -207,9 +207,9 @@ void CDebugSystemInfo::ReadClusters()
 #endif
 }
 
-void CDebugSystemInfo::Update()
+void CDebugSystemInfo::Update(bool timeFrames)
 {
-  KODI::DEBUG_FRAME_TIME::SetEnabled(true);
+  KODI::DEBUG_FRAME_TIME::SetEnabled(timeFrames);
 
   const auto now = std::chrono::steady_clock::now();
   if (now - m_lastSample < SAMPLE_INTERVAL)
@@ -284,7 +284,7 @@ void CDebugSystemInfo::Update()
 #endif
 }
 
-std::string CDebugSystemInfo::GetSummary() const
+std::string CDebugSystemInfo::GetSystemSummary() const
 {
   if (m_lastSample == std::chrono::steady_clock::time_point{})
     return {};
@@ -304,25 +304,6 @@ std::string CDebugSystemInfo::GetSummary() const
       summary += ", free " + FormatBytes(m_availableBytes);
     summary += "  ";
   }
-  if (m_budgetMs > 0.0f && m_current.maxMs > 0.0f)
-  {
-    summary += StringUtils::Format(
-        "Frame {}{:.1f}{}, max {}{:.1f}{} of {:.1f} ms ({}{:.0f}%{} busy)  ",
-        BudgetAss(m_current.averageMs, m_budgetMs), m_current.averageMs, ASS_RESET,
-        BudgetAss(m_current.maxMs, m_budgetMs), m_current.maxMs, ASS_RESET, m_budgetMs,
-        BudgetAss(m_current.busyPercent, 100.0f), m_current.busyPercent, ASS_RESET);
-  }
-  if (m_current.gpuMs >= 0.0f || m_gpuMHz > 0)
-  {
-    summary += "GPU";
-    if (m_current.gpuMs >= 0.0f)
-      summary +=
-          StringUtils::Format(" {}{:.1f} ms ({:.0f}%){}", BudgetAss(m_current.gpuPercent, 100.0f),
-                              m_current.gpuMs, m_current.gpuPercent, ASS_RESET);
-    if (m_gpuMHz > 0)
-      summary += StringUtils::Format(" @ {} MHz", m_gpuMHz);
-    summary += "  ";
-  }
   if (m_thermalStatus >= 0)
   {
     static constexpr std::array<std::string_view, 7> names = {
@@ -338,6 +319,29 @@ std::string CDebugSystemInfo::GetSummary() const
     summary += ASS_RESET;
   }
   StringUtils::TrimRight(summary);
+  return summary;
+}
+
+std::string CDebugSystemInfo::GetFrameSummary() const
+{
+  if (m_budgetMs <= 0.0f || m_current.maxMs <= 0.0f)
+    return {};
+
+  std::string summary = StringUtils::Format(
+      "{}{:.1f}{} ms, max {}{:.1f}{} of {:.1f} ms, {}{:.0f}%{} busy",
+      BudgetAss(m_current.averageMs, m_budgetMs), m_current.averageMs, ASS_RESET,
+      BudgetAss(m_current.maxMs, m_budgetMs), m_current.maxMs, ASS_RESET, m_budgetMs,
+      BudgetAss(m_current.busyPercent, 100.0f), m_current.busyPercent, ASS_RESET);
+  if (m_current.gpuMs >= 0.0f || m_gpuMHz > 0)
+  {
+    summary += "  GPU";
+    if (m_current.gpuMs >= 0.0f)
+      summary +=
+          StringUtils::Format(" {}{:.1f} ms, {:.0f}%{}", BudgetAss(m_current.gpuPercent, 100.0f),
+                              m_current.gpuMs, m_current.gpuPercent, ASS_RESET);
+    if (m_gpuMHz > 0)
+      summary += StringUtils::Format(" @ {} MHz", m_gpuMHz);
+  }
   return summary;
 }
 
