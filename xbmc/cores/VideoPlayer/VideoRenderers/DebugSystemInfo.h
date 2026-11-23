@@ -47,6 +47,8 @@ private:
     float averageMs;
     float maxMs;
     float gpuMs; //!< negative if not available
+    float busyPercent; //!< share of the second the render thread spent on frames
+    float gpuPercent; //!< share of the second the GPU spent on Kodi's frames, negative if unknown
   };
 
   void ReadClusters();
@@ -62,7 +64,7 @@ private:
   int m_thermalStatus{-1};
   float m_thermalHeadroom{-1.0f};
   float m_budgetMs{0.0f};
-  Sample m_current{0.0f, 0.0f, -1.0f};
+  Sample m_current{0.0f, 0.0f, -1.0f, 0.0f, -1.0f};
   //! Oldest first, at most one minute
   std::vector<Sample> m_history;
   bool m_changed{false};

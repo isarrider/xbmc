@@ -65,10 +65,10 @@ constexpr float PLOT_HEIGHT = 96.0f;
 constexpr float TOTAL_WIDTH = 30.0f;
 
 //! 5x7 pixel digits and '.', one row per entry, bit 4 is the left column
-constexpr std::string_view GLYPH_CHARS = "0123456789.";
+constexpr std::string_view GLYPH_CHARS = "0123456789.%";
 constexpr int GLYPH_WIDTH = 5;
 constexpr int GLYPH_HEIGHT = 7;
-constexpr std::array<std::array<uint8_t, GLYPH_HEIGHT>, 11> GLYPHS = {{
+constexpr std::array<std::array<uint8_t, GLYPH_HEIGHT>, 12> GLYPHS = {{
     {0x0E, 0x11, 0x13, 0x15, 0x19, 0x11, 0x0E},
     {0x04, 0x0C, 0x04, 0x04, 0x04, 0x04, 0x0E},
     {0x0E, 0x11, 0x01, 0x02, 0x04, 0x08, 0x1F},
@@ -80,6 +80,7 @@ constexpr std::array<std::array<uint8_t, GLYPH_HEIGHT>, 11> GLYPHS = {{
     {0x0E, 0x11, 0x11, 0x0E, 0x11, 0x11, 0x0E},
     {0x0E, 0x11, 0x11, 0x0F, 0x01, 0x02, 0x0C},
     {0x00, 0x00, 0x00, 0x00, 0x00, 0x0C, 0x0C},
+    {0x18, 0x19, 0x02, 0x04, 0x08, 0x13, 0x03},
 }};
 constexpr float FONT = 2.0f;
 constexpr float LABEL_WIDTH = 3 * (GLYPH_WIDTH + 1) * FONT;
@@ -221,12 +222,17 @@ void CDebugSystemInfo::Update()
     m_lastSample = now;
     return;
   }
+  const float elapsedMs = std::chrono::duration<float, std::milli>(now - m_lastSample).count();
   m_lastSample = now;
 
   const auto frames = KODI::DEBUG_FRAME_TIME::Take();
   const float fps = CServiceBroker::GetWinSystem()->GetGfxContext().GetFPS();
   m_budgetMs = fps > 0.0f ? 1000.0f / fps : 0.0f;
-  m_current = {frames.averageMs, frames.maxMs, frames.gpuMs};
+  // Time per frame times the frames drawn in this second gives the share of the second
+  const float busyMs = frames.averageMs * static_cast<float>(frames.frames);
+  const float gpuBusyMs = frames.gpuMs * static_cast<float>(frames.frames);
+  m_current = {frames.averageMs, frames.maxMs, frames.gpuMs, 100.0f * busyMs / elapsedMs,
+               frames.gpuMs >= 0.0f ? 100.0f * gpuBusyMs / elapsedMs : -1.0f};
   if (frames.frames > 0)
   {
     m_history.push_back(m_current);
@@ -300,17 +306,19 @@ std::string CDebugSystemInfo::GetSummary() const
   }
   if (m_budgetMs > 0.0f && m_current.maxMs > 0.0f)
   {
-    summary += StringUtils::Format("Frame {}{:.1f}{}, max {}{:.1f}{} of {:.1f} ms  ",
-                                   BudgetAss(m_current.averageMs, m_budgetMs), m_current.averageMs,
-                                   ASS_RESET, BudgetAss(m_current.maxMs, m_budgetMs),
-                                   m_current.maxMs, ASS_RESET, m_budgetMs);
+    summary += StringUtils::Format(
+        "Frame {}{:.1f}{}, max {}{:.1f}{} of {:.1f} ms ({}{:.0f}%{} busy)  ",
+        BudgetAss(m_current.averageMs, m_budgetMs), m_current.averageMs, ASS_RESET,
+        BudgetAss(m_current.maxMs, m_budgetMs), m_current.maxMs, ASS_RESET, m_budgetMs,
+        BudgetAss(m_current.busyPercent, 100.0f), m_current.busyPercent, ASS_RESET);
   }
   if (m_current.gpuMs >= 0.0f || m_gpuMHz > 0)
   {
     summary += "GPU";
     if (m_current.gpuMs >= 0.0f)
-      summary += StringUtils::Format(" {}{:.1f} ms{}", BudgetAss(m_current.gpuMs, m_budgetMs),
-                                     m_current.gpuMs, ASS_RESET);
+      summary +=
+          StringUtils::Format(" {}{:.1f} ms ({:.0f}%){}", BudgetAss(m_current.gpuPercent, 100.0f),
+                              m_current.gpuMs, m_current.gpuPercent, ASS_RESET);
     if (m_gpuMHz > 0)
       summary += StringUtils::Format(" @ {} MHz", m_gpuMHz);
     summary += "  ";
@@ -383,7 +391,7 @@ void CDebugSystemInfo::Reset()
   KODI::DEBUG_FRAME_TIME::SetEnabled(false);
   m_lastSample = {};
   m_history = {};
-  m_current = {0.0f, 0.0f, -1.0f};
+  m_current = {0.0f, 0.0f, -1.0f, 0.0f, -1.0f};
   m_clockKHz.clear();
   m_thermal.reset();
   m_pixels = std::vector<uint32_t>();
@@ -523,15 +531,19 @@ void CDebugSystemInfo::Draw(float scale)
     fill(x - dot, y - dot, x + dot, y + dot, COLOR_HIGH);
   }
 
-  // The last second's average in a bar like the CPU total
+  // How busy the last second was, like the CPU total: the GPU where it can be timed, otherwise
+  // the render thread
   const int x = plotX + plotWidth + padding;
   const int barTop = padding + textHeight + font;
-  const float current = m_history.back().averageMs;
-  const int currentTop = toY(current, barTop);
+  const Sample& last = m_history.back();
+  const float percent = last.gpuPercent >= 0.0f ? last.gpuPercent : last.busyPercent;
+  const int currentTop =
+      bottom -
+      static_cast<int>(std::lround((bottom - barTop) * std::clamp(percent / 100, 0.0f, 1.0f)));
   fill(x, barTop, x + totalWidth, bottom, COLOR_TRACK);
-  fill(x, currentTop, x + totalWidth, bottom, BudgetColor(current, m_budgetMs));
+  fill(x, currentTop, x + totalWidth, bottom, BudgetColor(percent, 100.0f));
   outline(x, currentTop, x + totalWidth, bottom);
-  const std::string value = StringUtils::Format("{:.0f}", current);
+  const std::string value = StringUtils::Format("{:.0f}%", percent);
   text(x + (totalWidth - textWidth(value)) / 2,
        std::max(currentTop - textHeight - font, padding / 2), value);
 }
