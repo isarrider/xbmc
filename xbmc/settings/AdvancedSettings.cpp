@@ -319,6 +319,11 @@ void CAdvancedSettings::Initialize()
   m_videoDebugFrames = false;
   m_videoDebugSystemGraph = false;
   m_videoDebugLines.clear();
+  m_videoDebugTextSize = 100;
+  m_videoDebugTextBackdrop = 0;
+  m_videoDebugTextPosition = 0;
+  m_videoDebugGraphicsPosition = 1;
+  m_videoDebugGraphicsSize = 100;
 
   m_videoDefaultLatency = 0.0;
   m_videoDefaultHdrExtraLatency = 0.0;
@@ -1018,6 +1023,34 @@ void CAdvancedSettings::ParseSettingsFile(const std::string &file)
           CLog::Log(LOGWARNING, "playerdebuginfo: unknown line \"{}\"", line);
         else
           m_videoDebugLines.push_back(line);
+      }
+    }
+    if (pDebugInfo)
+    {
+      const auto corner = [](const TiXmlElement* element, int& value)
+      {
+        static constexpr std::array<std::string_view, 4> corners = {"topleft", "topright",
+                                                                    "bottomleft", "bottomright"};
+        std::string position;
+        if (!XMLUtils::GetString(element, "position", position))
+          return;
+        StringUtils::ToLower(position);
+        const auto it = std::ranges::find(corners, position);
+        if (it != corners.end())
+          value = static_cast<int>(it - corners.begin());
+        else
+          CLog::Log(LOGWARNING, "playerdebuginfo: unknown position \"{}\"", position);
+      };
+      if (const TiXmlElement* text = pDebugInfo->FirstChildElement("text"))
+      {
+        XMLUtils::GetInt(text, "size", m_videoDebugTextSize, 50, 200);
+        XMLUtils::GetInt(text, "backdrop", m_videoDebugTextBackdrop, 0, 100);
+        corner(text, m_videoDebugTextPosition);
+      }
+      if (const TiXmlElement* graphics = pDebugInfo->FirstChildElement("graphics"))
+      {
+        XMLUtils::GetInt(graphics, "size", m_videoDebugGraphicsSize, 50, 200);
+        corner(graphics, m_videoDebugGraphicsPosition);
       }
     }
 

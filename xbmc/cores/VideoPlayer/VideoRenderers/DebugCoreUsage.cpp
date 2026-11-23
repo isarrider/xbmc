@@ -149,10 +149,11 @@ std::string CDebugCoreUsage::GetSummary() const
   return summary + StringUtils::Format("(total {}%)", m_total);
 }
 
-float CDebugCoreUsage::Render(const CRect& view, Graph graph)
+CSize CDebugCoreUsage::Prepare(const CRect& view, Graph graph, float size)
 {
+  m_scale = 0.0f;
   if (graph == Graph::OFF || m_history.empty() || view.IsEmpty())
-    return view.y1;
+    return {};
 
   const float cores = static_cast<float>(m_history.size());
   const float width = graph == Graph::BARS ? 2 * PADDING + (cores + 1) * BAR_WIDTH +
@@ -163,10 +164,10 @@ float CDebugCoreUsage::Render(const CRect& view, Graph graph)
                            : 2 * PADDING + cores * ROW_HEIGHT + (cores - 1) * ROW_GAP;
   // Shrink the graphic if it would not fit on the screen with many cores
   const float scale =
-      std::min({std::max(view.Height() / 1080.0f, 0.5f), (view.Width() - 2 * MARGIN) / width,
+      std::min({std::max(view.Height() / 1080.0f, 0.5f) * size, (view.Width() - 2 * MARGIN) / width,
                 (view.Height() - 2 * MARGIN) / height});
   if (scale <= 0.0f)
-    return view.y1;
+    return {};
   const auto w = static_cast<unsigned int>(std::lround(width * scale));
   const auto h = static_cast<unsigned int>(std::lround(height * scale));
 
@@ -179,7 +180,7 @@ float CDebugCoreUsage::Render(const CRect& view, Graph graph)
     m_changed = true;
   }
   if (!m_texture)
-    return view.y1;
+    return {};
 
   if (m_changed || graph != m_drawnGraph)
   {
@@ -190,16 +191,22 @@ float CDebugCoreUsage::Render(const CRect& view, Graph graph)
     m_drawnGraph = graph;
   }
 
-  const float x2 = view.x2 - MARGIN * scale;
-  const float y1 = view.y1 + MARGIN * scale;
-  const CRect rect(x2 - static_cast<float>(w), y1, x2, y1 + static_cast<float>(h));
-  // The texture may be padded, e.g. to a power of two
-  const CRect texCoords(0.0f, 0.0f,
-                        static_cast<float>(w) / static_cast<float>(m_texture->GetTextureWidth()),
-                        static_cast<float>(h) / static_cast<float>(m_texture->GetTextureHeight()));
-  CGUITexture::DrawQuad(rect, 0xFFFFFFFF, m_texture.get(), &texCoords, -1.0f);
   m_scale = scale;
-  return rect.y2;
+  return {static_cast<float>(w), static_cast<float>(h)};
+}
+
+void CDebugCoreUsage::RenderAt(const CPoint& position) const
+{
+  if (m_scale <= 0.0f || !m_texture)
+    return;
+
+  const CRect rect(position.x, position.y, position.x + static_cast<float>(m_width),
+                   position.y + static_cast<float>(m_height));
+  // The texture may be padded, e.g. to a power of two
+  const CRect texCoords(
+      0.0f, 0.0f, static_cast<float>(m_width) / static_cast<float>(m_texture->GetTextureWidth()),
+      static_cast<float>(m_height) / static_cast<float>(m_texture->GetTextureHeight()));
+  CGUITexture::DrawQuad(rect, 0xFFFFFFFF, m_texture.get(), &texCoords, -1.0f);
 }
 
 void CDebugCoreUsage::Reset()

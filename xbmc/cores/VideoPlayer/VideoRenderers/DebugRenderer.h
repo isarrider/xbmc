@@ -59,6 +59,9 @@ protected:
   bool m_showFrameGraph{false};
 
 private:
+  //! The CPU and frame time graphics, stacked in the configured corner
+  void RenderGraphics(const CRect& view);
+
   CSubtitlesAdapter* m_adapter{nullptr};
   std::atomic_bool m_isInitialized{false};
   std::shared_ptr<CDVDOverlay> m_overlay;

@@ -20,10 +20,17 @@
 #include "windowing/WinSystem.h"
 
 #include <algorithm>
+#include <array>
 #include <string_view>
 #include <vector>
 
 using namespace OVERLAY;
+
+namespace
+{
+//! Space around the CPU and frame time graphics, for a 1080 pixel high screen
+constexpr float GRAPHICS_MARGIN = 8.0f;
+} // namespace
 
 CDebugRenderer::CDebugRenderer()
 {
@@ -165,21 +172,26 @@ void CDebugRenderer::SetInfo(DEBUG_INFO_PLAYER& info, const DEBUG_INFO_FRAMES& f
     if (line.always || !line.text.empty())
       m_adapter->AddSubtitle(line.text, 0., 5000000.);
   };
-  const auto& order = advancedSettings->m_videoDebugLines;
-  if (order.empty())
+  std::vector<Line*> shown;
+  if (advancedSettings->m_videoDebugLines.empty())
   {
     for (Line& line : lines)
-      add(line);
+      shown.push_back(&line);
   }
   else
   {
-    for (const std::string& name : order)
+    for (const std::string& name : advancedSettings->m_videoDebugLines)
     {
       const auto line = std::ranges::find(lines, name, &Line::name);
       if (line != lines.end())
-        add(*line);
+        shown.push_back(&*line);
     }
   }
+  // Libass stacks bottom aligned lines upwards, so add them last to first to keep the order
+  if (advancedSettings->m_videoDebugTextPosition >= 2)
+    std::ranges::reverse(shown);
+  for (Line* line : shown)
+    add(*line);
 }
 
 void CDebugRenderer::SetInfo(DEBUG_INFO_VIDEO& video, DEBUG_INFO_RENDER& render)
@@ -206,6 +218,49 @@ void CDebugRenderer::SetInfo(DEBUG_INFO_VIDEO& video, DEBUG_INFO_RENDER& render)
   m_adapter->AddSubtitle(render.videoOutput, 0., 5000000.);
 }
 
+void CDebugRenderer::RenderGraphics(const CRect& view)
+{
+  const auto& advancedSettings = CServiceBroker::GetSettingsComponent()->GetAdvancedSettings();
+  const float size = static_cast<float>(advancedSettings->m_videoDebugGraphicsSize) / 100;
+  // Corners as in the settings: bit 0 is the right side, bit 1 the bottom. If the text is in the
+  // same corner, the graphics move to the other side.
+  int corner = advancedSettings->m_videoDebugGraphicsPosition;
+  if (corner == advancedSettings->m_videoDebugTextPosition)
+    corner ^= 1;
+  const bool right = (corner & 1) != 0;
+  const bool bottom = (corner & 2) != 0;
+
+  CSize cores;
+  float scale = 0.0f;
+  if (m_coreGraph != CDebugCoreUsage::Graph::OFF)
+  {
+    cores = m_coreUsage.Prepare(view, m_coreGraph, size);
+    scale = m_coreUsage.GetScale();
+  }
+  const float baseScale = std::max(view.Height() / 1080.0f, 0.5f) * size;
+  // The frame times line up with the CPU graphic above them and share its margins
+  const float margin = GRAPHICS_MARGIN * (scale > 0.0f ? scale : baseScale);
+  CSize frames;
+  if (m_systemGraph)
+  {
+    const float used = cores.Height() > 0.0f ? cores.Height() + margin : 0.0f;
+    frames = m_systemInfo.Prepare(view, size, scale, view.Height() - used - 2 * margin);
+  }
+  if (cores.Width() <= 0.0f && frames.Width() <= 0.0f)
+    return;
+
+  const float gap = cores.Height() > 0.0f && frames.Height() > 0.0f ? margin : 0.0f;
+  float y = bottom ? view.y2 - margin - (cores.Height() + gap + frames.Height()) : view.y1 + margin;
+  const auto x = [&](float width) { return right ? view.x2 - margin - width : view.x1 + margin; };
+  if (cores.Width() > 0.0f)
+  {
+    m_coreUsage.RenderAt({x(cores.Width()), y});
+    y += cores.Height() + gap;
+  }
+  if (frames.Width() > 0.0f)
+    m_systemInfo.RenderAt({x(frames.Width()), y});
+}
+
 void CDebugRenderer::Render(CRect& src, CRect& dst, CRect& view)
 {
   if (!m_isInitialized)
@@ -215,15 +270,7 @@ void CDebugRenderer::Render(CRect& src, CRect& dst, CRect& view)
   {
     if (m_showFrameGraph)
       m_frameGraph.Render(view);
-    float top = view.y1;
-    float scale = 0.0f;
-    if (m_coreGraph != CDebugCoreUsage::Graph::OFF)
-    {
-      top = m_coreUsage.Render(view, m_coreGraph);
-      scale = m_coreUsage.GetScale();
-    }
-    if (m_systemGraph)
-      m_systemInfo.Render(view, top, scale);
+    RenderGraphics(view);
   }
 
   m_overlayRenderer.SetVideoRect(src, dst, view);
@@ -286,8 +333,20 @@ void CDebugRenderer::CRenderer::Render(int idx, float depth)
 
 void CDebugRenderer::CRenderer::CreateSubtitlesStyle()
 {
-  m_debugOverlayStyle = std::make_shared<KODI::SUBTITLES::STYLE::style>();
+  using namespace KODI::SUBTITLES::STYLE;
+  const auto& advancedSettings = CServiceBroker::GetSettingsComponent()->GetAdvancedSettings();
+
+  m_debugOverlayStyle = std::make_shared<style>();
   m_debugOverlayStyle->fontName = KODI::SUBTITLES::FONT_DEFAULT_FAMILYNAME;
-  m_debugOverlayStyle->fontSize = 20.0;
+  m_debugOverlayStyle->fontSize = 20.0 * advancedSettings->m_videoDebugTextSize / 100;
   m_debugOverlayStyle->marginVertical = 12;
+  if (advancedSettings->m_videoDebugTextBackdrop > 0)
+  {
+    m_debugOverlayStyle->borderStyle = BorderType::BOX;
+    m_debugOverlayStyle->backgroundOpacity = advancedSettings->m_videoDebugTextBackdrop;
+  }
+  static constexpr std::array<FontAlign, 4> alignments = {
+      FontAlign::TOP_LEFT, FontAlign::TOP_RIGHT, FontAlign::SUB_LEFT, FontAlign::SUB_RIGHT};
+  m_debugOverlayStyle->alignment =
+      alignments[std::clamp(advancedSettings->m_videoDebugTextPosition, 0, 3)];
 }
