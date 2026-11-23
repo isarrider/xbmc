@@ -208,6 +208,8 @@ class CAdvancedSettings : public ISettingCallback, public ISettingsHandler
     bool m_videoDebugSystem;
     bool m_videoDebugFrames;
     bool m_videoDebugSystemGraph;
+    //! Names of the Player Debug Info lines in the order shown, empty for all in the default order
+    std::vector<std::string> m_videoDebugLines;
     float m_videoDefaultLatency;
     float m_videoDefaultHdrExtraLatency;
     bool m_DXVACheckCompatibility;

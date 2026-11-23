@@ -30,6 +30,7 @@
 #include "utils/log.h"
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <climits>
 #include <regex>
@@ -317,6 +318,7 @@ void CAdvancedSettings::Initialize()
   m_videoDebugSystem = false;
   m_videoDebugFrames = false;
   m_videoDebugSystemGraph = false;
+  m_videoDebugLines.clear();
 
   m_videoDefaultLatency = 0.0;
   m_videoDefaultHdrExtraLatency = 0.0;
@@ -996,6 +998,27 @@ void CAdvancedSettings::ParseSettingsFile(const std::string &file)
       std::string graph;
       if (XMLUtils::GetString(pDebugSystem, "graph", graph))
         m_videoDebugSystemGraph = StringUtils::EqualsNoCase(graph, "history");
+    }
+
+    const TiXmlElement* pDebugInfo = pElement->FirstChildElement("playerdebuginfo");
+    std::string lines;
+    if (pDebugInfo && XMLUtils::GetString(pDebugInfo, "lines", lines))
+    {
+      static constexpr std::array<std::string_view, 10> knownLines = {
+          "audio",  "video",  "player",  "framesizes", "cores",
+          "system", "frames", "threads", "vsync",      "geometry"};
+      m_videoDebugLines.clear();
+      for (std::string line : StringUtils::Split(lines, std::vector<std::string>{",", " "}))
+      {
+        StringUtils::Trim(line);
+        StringUtils::ToLower(line);
+        if (line.empty())
+          continue;
+        if (std::ranges::find(knownLines, line) == knownLines.end())
+          CLog::Log(LOGWARNING, "playerdebuginfo: unknown line \"{}\"", line);
+        else
+          m_videoDebugLines.push_back(line);
+      }
     }
 
     // Store global display latency settings

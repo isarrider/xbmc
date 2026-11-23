@@ -19,6 +19,10 @@
 #include "windowing/GraphicContext.h"
 #include "windowing/WinSystem.h"
 
+#include <algorithm>
+#include <string_view>
+#include <vector>
+
 using namespace OVERLAY;
 
 CDebugRenderer::CDebugRenderer()
@@ -93,16 +97,27 @@ void CDebugRenderer::SetInfo(DEBUG_INFO_PLAYER& info, const DEBUG_INFO_FRAMES& f
   // provide a way to allow fixed on-screen text display
   // without use all these fixed values.
   m_adapter->FlushSubtitles();
-  m_adapter->AddSubtitle(info.audio, 0., 5000000.);
-  m_adapter->AddSubtitle(info.video, 0., 5000000.);
-  m_adapter->AddSubtitle(info.player, 0., 5000000.);
+
+  // Every line under the name <playerdebuginfo><lines> uses for it, in the default order. A line
+  // that is switched off or has nothing to show stays empty and is left out, except the player's
+  // own lines, which are always shown.
+  struct Line
+  {
+    std::string_view name;
+    std::string text;
+    bool always;
+  };
+  std::vector<Line> lines = {
+      {"audio", info.audio, true},   {"video", info.video, true},
+      {"player", info.player, true}, {"framesizes", {}, false},
+      {"cores", {}, false},          {"system", {}, false},
+      {"frames", {}, false},         {"threads", {}, false},
+      {"vsync", info.vsync, true},   {"geometry", info.contentGeometry, false}};
+  const auto set = [&lines](std::string_view name, std::string text)
+  { std::ranges::find(lines, name, &Line::name)->text = std::move(text); };
 
   if (m_showFrameGraph)
-  {
-    std::string legend = m_frameGraph.GetLegend();
-    if (!legend.empty())
-      m_adapter->AddSubtitle(legend, 0., 5000000.);
-  }
+    set("framesizes", m_frameGraph.GetLegend());
 
   const auto& advancedSettings = CServiceBroker::GetSettingsComponent()->GetAdvancedSettings();
   m_coreGraph = static_cast<CDebugCoreUsage::Graph>(advancedSettings->m_videoDebugThreadsGraph);
@@ -112,10 +127,7 @@ void CDebugRenderer::SetInfo(DEBUG_INFO_PLAYER& info, const DEBUG_INFO_FRAMES& f
   {
     const std::string coreUsage = m_coreUsage.GetSummary();
     if (!coreUsage.empty())
-    {
-      std::string cores = "Cores: " + coreUsage;
-      m_adapter->AddSubtitle(cores, 0., 5000000.);
-    }
+      set("cores", "Cores: " + coreUsage);
   }
 
   m_systemGraph = advancedSettings->m_videoDebugSystemGraph;
@@ -126,19 +138,13 @@ void CDebugRenderer::SetInfo(DEBUG_INFO_PLAYER& info, const DEBUG_INFO_FRAMES& f
   {
     const std::string systemInfo = m_systemInfo.GetSystemSummary();
     if (!systemInfo.empty())
-    {
-      std::string system = "System: " + systemInfo;
-      m_adapter->AddSubtitle(system, 0., 5000000.);
-    }
+      set("system", "System: " + systemInfo);
   }
   if (advancedSettings->m_videoDebugFrames)
   {
     const std::string frameInfo = m_systemInfo.GetFrameSummary();
     if (!frameInfo.empty())
-    {
-      std::string frames = "Frames: " + frameInfo;
-      m_adapter->AddSubtitle(frames, 0., 5000000.);
-    }
+      set("frames", "Frames: " + frameInfo);
   }
 
   if (advancedSettings->m_videoDebugThreads)
@@ -146,15 +152,34 @@ void CDebugRenderer::SetInfo(DEBUG_INFO_PLAYER& info, const DEBUG_INFO_FRAMES& f
     const std::string& threadUsage =
         m_threadUsage.GetSummary(advancedSettings->m_videoDebugThreadsCount);
     if (!threadUsage.empty())
-    {
-      std::string threads = "Threads: " + threadUsage;
-      m_adapter->AddSubtitle(threads, 0., 5000000.);
-    }
+      set("threads", "Threads: " + threadUsage);
   }
 
-  m_adapter->AddSubtitle(info.vsync, 0., 5000000.);
-  if (!info.contentGeometry.empty())
-    m_adapter->AddSubtitle(info.contentGeometry, 0., 5000000.);
+  // FIXME: We currently force ASS_Event's and the current PTS
+  // of rendering with fixed values to allow perpetual
+  // display of on-screen text. It would be appropriate for Libass
+  // provide a way to allow fixed on-screen text display
+  // without use all these fixed values.
+  const auto add = [this](Line& line)
+  {
+    if (line.always || !line.text.empty())
+      m_adapter->AddSubtitle(line.text, 0., 5000000.);
+  };
+  const auto& order = advancedSettings->m_videoDebugLines;
+  if (order.empty())
+  {
+    for (Line& line : lines)
+      add(line);
+  }
+  else
+  {
+    for (const std::string& name : order)
+    {
+      const auto line = std::ranges::find(lines, name, &Line::name);
+      if (line != lines.end())
+        add(*line);
+    }
+  }
 }
 
 void CDebugRenderer::SetInfo(DEBUG_INFO_VIDEO& video, DEBUG_INFO_RENDER& render)
